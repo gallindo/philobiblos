@@ -118,8 +118,8 @@ test.describe('AC-5.2 / AC-5.3 / AC-5.4 Genres', () => {
     await page.goto('/genres');
     const row = page.getByTestId('genre-row').filter({ hasText: genre.name });
 
-    page.on('dialog', (dialog) => dialog.accept());
     await row.getByTestId('genre-delete').click();
+    await row.getByTestId('genre-delete-confirm').click();
 
     await expect(page.getByTestId('success-message')).toContainText('Genre deleted');
     await expect(page.getByTestId('genre-row').filter({ hasText: genre.name })).not.toBeVisible();
@@ -137,8 +137,8 @@ test.describe('AC-5.2 / AC-5.3 / AC-5.4 Genres', () => {
     await page.goto('/genres');
     const row = page.getByTestId('genre-row').filter({ hasText: genre.name });
 
-    page.on('dialog', (dialog) => dialog.accept());
     await row.getByTestId('genre-delete').click();
+    await row.getByTestId('genre-delete-confirm').click();
 
     await expect(page.getByTestId('error-banner')).toContainText(/in use|cannot be deleted/i);
     await expect(page.getByTestId('genre-row').filter({ hasText: genre.name })).toBeVisible();

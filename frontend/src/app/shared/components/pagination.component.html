@@ -11,7 +11,7 @@
     >
       Previous
     </button>
-    <span class="page-number" data-testid="pagination-page-number">Page {{ page() }} of {{ totalPages }}</span>
+    <span class="page-number" aria-current="page" data-testid="pagination-page-number">Page {{ page() }} of {{ totalPages }}</span>
     <button
       type="button"
       (click)="goToPage(page() + 1)"

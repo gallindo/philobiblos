@@ -13,18 +13,30 @@
   <div class="toolbar">
     <input
       type="search"
-      placeholder="Search titles..."
+      name="search"
+      autocomplete="off"
+      placeholder="Search titles…"
       [value]="search()"
       (input)="onSearch($any($event).target.value)"
       data-testid="book-search"
     />
-    <select [value]="authorFilter()" (change)="authorFilter.set($any($event).target.value); onFilterChange()" data-testid="author-filter">
+    <select
+      aria-label="Filter by author"
+      [value]="authorFilter()"
+      (change)="authorFilter.set($any($event).target.value); onFilterChange()"
+      data-testid="author-filter"
+    >
       <option value="">All authors</option>
       @for (author of authors(); track author.id) {
         <option [value]="author.id">{{ author.name }}</option>
       }
     </select>
-    <select [value]="genreFilter()" (change)="genreFilter.set($any($event).target.value); onFilterChange()" data-testid="genre-filter">
+    <select
+      aria-label="Filter by genre"
+      [value]="genreFilter()"
+      (change)="genreFilter.set($any($event).target.value); onFilterChange()"
+      data-testid="genre-filter"
+    >
       <option value="">All genres</option>
       @for (genre of genres(); track genre.id) {
         <option [value]="genre.id">{{ genre.name }}</option>
@@ -40,7 +52,9 @@
       <label for="book-title">Title</label>
       <input
         id="book-title"
+        name="title"
         type="text"
+        autocomplete="off"
         formControlName="title"
         [class.invalid]="form.controls.title.invalid && form.controls.title.touched"
         data-testid="book-form-title"
@@ -93,7 +107,10 @@
       <label for="book-isbn">ISBN</label>
       <input
         id="book-isbn"
+        name="isbn"
         type="text"
+        autocomplete="off"
+        spellcheck="false"
         formControlName="isbn"
         [class.invalid]="form.controls.isbn.invalid && form.controls.isbn.touched"
         data-testid="book-form-isbn"
@@ -105,7 +122,10 @@
       <label for="book-year">Published year</label>
       <input
         id="book-year"
+        name="publishedYear"
         type="number"
+        inputmode="numeric"
+        autocomplete="off"
         formControlName="publishedYear"
         [class.invalid]="form.controls.publishedYear.invalid && form.controls.publishedYear.touched"
         data-testid="book-form-published-year"
@@ -116,7 +136,7 @@
 
       <div class="form-actions">
         <button type="submit" class="btn-primary" [disabled]="saving()" data-testid="save-button">
-          {{ saving() ? 'Saving...' : 'Save' }}
+          {{ saving() ? 'Saving…' : 'Save' }}
         </button>
         <button type="button" class="btn-secondary" (click)="cancelEdit()" data-testid="cancel-button">
           Cancel
@@ -126,7 +146,7 @@
   }
 
   @if (loading()) {
-    <div class="status" aria-live="polite" data-testid="loading-indicator">Loading...</div>
+    <div class="status" aria-live="polite" data-testid="loading-indicator">Loading…</div>
   }
 
   @if (data(); as result) {
@@ -157,11 +177,17 @@
               <td data-testid="book-title">{{ book.title }}</td>
               <td data-testid="book-author">{{ book.author.name }}</td>
               <td data-testid="book-genre">{{ book.genre.name }}</td>
-              <td data-testid="book-isbn">{{ book.isbn || '—' }}</td>
-              <td data-testid="book-year">{{ book.publishedYear ?? '—' }}</td>
+              <td data-testid="book-isbn" class="numeric">{{ book.isbn || '—' }}</td>
+              <td data-testid="book-year" class="numeric">{{ book.publishedYear ?? '—' }}</td>
               <td class="actions">
-                <button type="button" class="btn-link" (click)="startEdit(book)" data-testid="book-edit">Edit</button>
-                <button type="button" class="btn-link danger" (click)="deleteBook(book)" data-testid="book-delete">Delete</button>
+                @if (confirmingDelete() === book) {
+                  <span class="confirm-text">Delete?</span>
+                  <button type="button" class="btn-link danger" (click)="confirmDelete(book)" data-testid="book-delete-confirm">Delete</button>
+                  <button type="button" class="btn-link" (click)="cancelDelete()" data-testid="book-delete-cancel">Cancel</button>
+                } @else {
+                  <button type="button" class="btn-link" (click)="startEdit(book)" data-testid="book-edit">Edit</button>
+                  <button type="button" class="btn-link danger" (click)="requestDelete(book)" data-testid="book-delete">Delete</button>
+                }
               </td>
             </tr>
           }

@@ -1,7 +1,8 @@
 <div class="app">
   <header class="app-header">
+    <a class="skip-link" href="#main">Skip to content</a>
     <div class="brand">
-      <span class="brand-icon">📚</span>
+      <span class="brand-icon" aria-hidden="true">📚</span>
       <h1>{{ title }}</h1>
     </div>
     <nav class="main-nav" aria-label="Main sections" data-testid="main-nav">
@@ -24,7 +25,7 @@
     </div>
   }
 
-  <main class="content">
+  <main id="main" class="content">
     <router-outlet />
   </main>
 </div>

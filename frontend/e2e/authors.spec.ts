@@ -115,8 +115,8 @@ test.describe('AC-5.2 / AC-5.3 / AC-5.4 Authors', () => {
     await page.goto('/authors');
     const row = page.getByTestId('author-row').filter({ hasText: author.name });
 
-    page.on('dialog', (dialog) => dialog.accept());
     await row.getByTestId('author-delete').click();
+    await row.getByTestId('author-delete-confirm').click();
 
     await expect(page.getByTestId('success-message')).toContainText('Author deleted');
     await expect(page.getByTestId('author-row').filter({ hasText: author.name })).not.toBeVisible();
@@ -134,8 +134,8 @@ test.describe('AC-5.2 / AC-5.3 / AC-5.4 Authors', () => {
     await page.goto('/authors');
     const row = page.getByTestId('author-row').filter({ hasText: author.name });
 
-    page.on('dialog', (dialog) => dialog.accept());
     await row.getByTestId('author-delete').click();
+    await row.getByTestId('author-delete-confirm').click();
 
     await expect(page.getByTestId('error-banner')).toContainText(/in use|cannot be deleted/i);
     await expect(page.getByTestId('author-row').filter({ hasText: author.name })).toBeVisible();

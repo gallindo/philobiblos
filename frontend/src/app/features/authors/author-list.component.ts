@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { ErrorService } from '../../core/error.service';
@@ -23,6 +24,8 @@ export class AuthorListComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly errorService = inject(ErrorService);
   private readonly fb = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   readonly data = signal<PagedResult<Author> | null>(null);
   readonly loading = signal(false);
@@ -33,6 +36,7 @@ export class AuthorListComponent implements OnInit {
   readonly isEditing = signal(false);
   readonly saving = signal(false);
   readonly message = signal<string | null>(null);
+  readonly confirmingDelete = signal<Author | null>(null);
 
   readonly form: AuthorForm = this.fb.group({
     id: this.fb.control<string | null>(null),
@@ -41,6 +45,9 @@ export class AuthorListComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    const params = this.route.snapshot.queryParams;
+    this.search.set(params['search'] ?? '');
+    this.page.set(parseInt(params['page'] ?? '1', 10) || 1);
     this.load();
   }
 
@@ -67,17 +74,34 @@ export class AuthorListComponent implements OnInit {
   onSearch(term: string): void {
     this.search.set(term);
     this.page.set(1);
+    this.confirmingDelete.set(null);
+    this.updateUrl();
     this.load();
   }
 
   onPageChange(next: number): void {
     this.page.set(next);
+    this.updateUrl();
     this.load();
+  }
+
+  private updateUrl(): void {
+    const queryParams: Record<string, string | number> = {};
+    const search = this.search();
+    if (search) queryParams['search'] = search;
+    if (this.page() !== 1) queryParams['page'] = this.page();
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams,
+      replaceUrl: true,
+    });
   }
 
   startCreate(): void {
     this.editing.set(null);
     this.isEditing.set(true);
+    this.confirmingDelete.set(null);
     this.form.reset({ id: null, name: '', bio: '' });
     this.errorService.clear();
     this.message.set(null);
@@ -86,6 +110,7 @@ export class AuthorListComponent implements OnInit {
   startEdit(author: Author): void {
     this.editing.set(author);
     this.isEditing.set(true);
+    this.confirmingDelete.set(null);
     this.form.setValue({ id: author.id, name: author.name, bio: author.bio ?? '' });
     this.errorService.clear();
     this.message.set(null);
@@ -94,6 +119,7 @@ export class AuthorListComponent implements OnInit {
   cancelEdit(): void {
     this.editing.set(null);
     this.isEditing.set(false);
+    this.confirmingDelete.set(null);
     this.form.reset({ id: null, name: '', bio: '' });
     this.errorService.clear();
   }
@@ -127,11 +153,16 @@ export class AuthorListComponent implements OnInit {
       });
   }
 
-  deleteAuthor(author: Author): void {
-    if (!window.confirm(`Delete author "${author.name}"?`)) {
-      return;
-    }
+  requestDelete(author: Author): void {
+    this.confirmingDelete.set(author);
+  }
 
+  cancelDelete(): void {
+    this.confirmingDelete.set(null);
+  }
+
+  confirmDelete(author: Author): void {
+    this.confirmingDelete.set(null);
     this.api.deleteAuthor(author.id).subscribe({
       next: () => {
         this.message.set('Author deleted.');

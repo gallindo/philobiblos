@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { ErrorService } from '../../core/error.service';
@@ -22,6 +23,8 @@ export class GenreListComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly errorService = inject(ErrorService);
   private readonly fb = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   readonly data = signal<PagedResult<Genre> | null>(null);
   readonly loading = signal(false);
@@ -32,6 +35,7 @@ export class GenreListComponent implements OnInit {
   readonly isEditing = signal(false);
   readonly saving = signal(false);
   readonly message = signal<string | null>(null);
+  readonly confirmingDelete = signal<Genre | null>(null);
 
   readonly form: GenreForm = this.fb.group({
     id: this.fb.control<string | null>(null),
@@ -39,6 +43,9 @@ export class GenreListComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    const params = this.route.snapshot.queryParams;
+    this.search.set(params['search'] ?? '');
+    this.page.set(parseInt(params['page'] ?? '1', 10) || 1);
     this.load();
   }
 
@@ -65,17 +72,34 @@ export class GenreListComponent implements OnInit {
   onSearch(term: string): void {
     this.search.set(term);
     this.page.set(1);
+    this.confirmingDelete.set(null);
+    this.updateUrl();
     this.load();
   }
 
   onPageChange(next: number): void {
     this.page.set(next);
+    this.updateUrl();
     this.load();
+  }
+
+  private updateUrl(): void {
+    const queryParams: Record<string, string | number> = {};
+    const search = this.search();
+    if (search) queryParams['search'] = search;
+    if (this.page() !== 1) queryParams['page'] = this.page();
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams,
+      replaceUrl: true,
+    });
   }
 
   startCreate(): void {
     this.editing.set(null);
     this.isEditing.set(true);
+    this.confirmingDelete.set(null);
     this.form.reset({ id: null, name: '' });
     this.errorService.clear();
     this.message.set(null);
@@ -84,6 +108,7 @@ export class GenreListComponent implements OnInit {
   startEdit(genre: Genre): void {
     this.editing.set(genre);
     this.isEditing.set(true);
+    this.confirmingDelete.set(null);
     this.form.setValue({ id: genre.id, name: genre.name });
     this.errorService.clear();
     this.message.set(null);
@@ -92,6 +117,7 @@ export class GenreListComponent implements OnInit {
   cancelEdit(): void {
     this.editing.set(null);
     this.isEditing.set(false);
+    this.confirmingDelete.set(null);
     this.form.reset({ id: null, name: '' });
     this.errorService.clear();
   }
@@ -125,11 +151,16 @@ export class GenreListComponent implements OnInit {
       });
   }
 
-  deleteGenre(genre: Genre): void {
-    if (!window.confirm(`Delete genre "${genre.name}"?`)) {
-      return;
-    }
+  requestDelete(genre: Genre): void {
+    this.confirmingDelete.set(genre);
+  }
 
+  cancelDelete(): void {
+    this.confirmingDelete.set(null);
+  }
+
+  confirmDelete(genre: Genre): void {
+    this.confirmingDelete.set(null);
     this.api.deleteGenre(genre.id).subscribe({
       next: () => {
         this.message.set('Genre deleted.');

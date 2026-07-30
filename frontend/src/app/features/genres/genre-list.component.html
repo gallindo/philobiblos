@@ -13,7 +13,9 @@
   <div class="toolbar">
     <input
       type="search"
-      placeholder="Search genres..."
+      name="search"
+      autocomplete="off"
+      placeholder="Search genres…"
       [value]="search()"
       (input)="onSearch($any($event).target.value)"
       data-testid="genre-search"
@@ -28,7 +30,9 @@
       <label for="genre-name">Name</label>
       <input
         id="genre-name"
+        name="name"
         type="text"
+        autocomplete="off"
         formControlName="name"
         [class.invalid]="form.controls.name.invalid && form.controls.name.touched"
         data-testid="genre-form-name"
@@ -42,7 +46,7 @@
 
       <div class="form-actions">
         <button type="submit" class="btn-primary" [disabled]="saving()" data-testid="save-button">
-          {{ saving() ? 'Saving...' : 'Save' }}
+          {{ saving() ? 'Saving…' : 'Save' }}
         </button>
         <button type="button" class="btn-secondary" (click)="cancelEdit()" data-testid="cancel-button">
           Cancel
@@ -52,7 +56,7 @@
   }
 
   @if (loading()) {
-    <div class="status" aria-live="polite" data-testid="loading-indicator">Loading...</div>
+    <div class="status" aria-live="polite" data-testid="loading-indicator">Loading…</div>
   }
 
   @if (data(); as result) {
@@ -76,8 +80,14 @@
             <tr data-testid="genre-row">
               <td data-testid="genre-name">{{ genre.name }}</td>
               <td class="actions">
-                <button type="button" class="btn-link" (click)="startEdit(genre)" data-testid="genre-edit">Edit</button>
-                <button type="button" class="btn-link danger" (click)="deleteGenre(genre)" data-testid="genre-delete">Delete</button>
+                @if (confirmingDelete() === genre) {
+                  <span class="confirm-text">Delete?</span>
+                  <button type="button" class="btn-link danger" (click)="confirmDelete(genre)" data-testid="genre-delete-confirm">Delete</button>
+                  <button type="button" class="btn-link" (click)="cancelDelete()" data-testid="genre-delete-cancel">Cancel</button>
+                } @else {
+                  <button type="button" class="btn-link" (click)="startEdit(genre)" data-testid="genre-edit">Edit</button>
+                  <button type="button" class="btn-link danger" (click)="requestDelete(genre)" data-testid="genre-delete">Delete</button>
+                }
               </td>
             </tr>
           }

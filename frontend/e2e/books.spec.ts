@@ -174,8 +174,8 @@ test.describe('AC-5.2 / AC-5.3 / AC-5.4 / AC-5.5 Books', () => {
     await page.goto('/books');
     const row = page.getByTestId('book-row').filter({ hasText: book.title });
 
-    page.on('dialog', (dialog) => dialog.accept());
     await row.getByTestId('book-delete').click();
+    await row.getByTestId('book-delete-confirm').click();
 
     await expect(page.getByTestId('success-message')).toContainText('Book deleted');
     await expect(page.getByTestId('book-row').filter({ hasText: book.title })).not.toBeVisible();

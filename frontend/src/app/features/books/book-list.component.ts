@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { ErrorService } from '../../core/error.service';
@@ -26,6 +27,8 @@ export class BookListComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly errorService = inject(ErrorService);
   private readonly fb = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   readonly data = signal<PagedResult<Book> | null>(null);
   readonly loading = signal(false);
@@ -38,6 +41,7 @@ export class BookListComponent implements OnInit {
   readonly isEditing = signal(false);
   readonly saving = signal(false);
   readonly message = signal<string | null>(null);
+  readonly confirmingDelete = signal<Book | null>(null);
 
   readonly authors = signal<Author[]>([]);
   readonly genres = signal<Genre[]>([]);
@@ -53,6 +57,11 @@ export class BookListComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    const params = this.route.snapshot.queryParams;
+    this.search.set(params['search'] ?? '');
+    this.authorFilter.set(params['authorId'] ?? '');
+    this.genreFilter.set(params['genreId'] ?? '');
+    this.page.set(parseInt(params['page'] ?? '1', 10) || 1);
     this.loadCatalogs();
     this.load();
   }
@@ -96,22 +105,43 @@ export class BookListComponent implements OnInit {
   onSearch(term: string): void {
     this.search.set(term);
     this.page.set(1);
+    this.confirmingDelete.set(null);
+    this.updateUrl();
     this.load();
   }
 
   onFilterChange(): void {
     this.page.set(1);
+    this.confirmingDelete.set(null);
+    this.updateUrl();
     this.load();
   }
 
   onPageChange(next: number): void {
     this.page.set(next);
+    this.updateUrl();
     this.load();
+  }
+
+  private updateUrl(): void {
+    const queryParams: Record<string, string | number> = {};
+    const search = this.search();
+    if (search) queryParams['search'] = search;
+    if (this.authorFilter()) queryParams['authorId'] = this.authorFilter();
+    if (this.genreFilter()) queryParams['genreId'] = this.genreFilter();
+    if (this.page() !== 1) queryParams['page'] = this.page();
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams,
+      replaceUrl: true,
+    });
   }
 
   startCreate(): void {
     this.editing.set(null);
     this.isEditing.set(true);
+    this.confirmingDelete.set(null);
     this.form.reset({ id: null, title: '', authorId: '', genreId: '', isbn: '', publishedYear: null });
     this.errorService.clear();
     this.message.set(null);
@@ -120,6 +150,7 @@ export class BookListComponent implements OnInit {
   startEdit(book: Book): void {
     this.editing.set(book);
     this.isEditing.set(true);
+    this.confirmingDelete.set(null);
     this.form.setValue({
       id: book.id,
       title: book.title,
@@ -135,6 +166,7 @@ export class BookListComponent implements OnInit {
   cancelEdit(): void {
     this.editing.set(null);
     this.isEditing.set(false);
+    this.confirmingDelete.set(null);
     this.form.reset({ id: null, title: '', authorId: '', genreId: '', isbn: '', publishedYear: null });
     this.errorService.clear();
   }
@@ -176,11 +208,16 @@ export class BookListComponent implements OnInit {
       });
   }
 
-  deleteBook(book: Book): void {
-    if (!window.confirm(`Delete book "${book.title}"?`)) {
-      return;
-    }
+  requestDelete(book: Book): void {
+    this.confirmingDelete.set(book);
+  }
 
+  cancelDelete(): void {
+    this.confirmingDelete.set(null);
+  }
+
+  confirmDelete(book: Book): void {
+    this.confirmingDelete.set(null);
     this.api.deleteBook(book.id).subscribe({
       next: () => {
         this.message.set('Book deleted.');

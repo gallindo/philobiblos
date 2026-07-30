@@ -108,22 +108,16 @@ export async function listBooksViaApi(request: APIRequestContext, title?: string
 export async function cleanupTestData(request: APIRequestContext): Promise<void> {
   const books = await listBooksViaApi(request);
   for (const book of books) {
-    if (book.title.includes('E2E')) {
-      await deleteBookViaApi(request, book.id);
-    }
+    await deleteBookViaApi(request, book.id);
   }
 
   const authors = await listAuthorsViaApi(request);
   for (const author of authors) {
-    if (author.name.includes('E2E')) {
-      await deleteAuthorViaApi(request, author.id);
-    }
+    await deleteAuthorViaApi(request, author.id);
   }
 
   const genres = await listGenresViaApi(request);
   for (const genre of genres) {
-    if (genre.name.includes('E2E')) {
-      await deleteGenreViaApi(request, genre.id);
-    }
+    await deleteGenreViaApi(request, genre.id);
   }
 }

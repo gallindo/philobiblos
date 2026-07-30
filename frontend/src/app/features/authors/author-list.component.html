@@ -13,7 +13,9 @@
   <div class="toolbar">
     <input
       type="search"
-      placeholder="Search authors..."
+      name="search"
+      autocomplete="off"
+      placeholder="Search authors…"
       [value]="search()"
       (input)="onSearch($any($event).target.value)"
       data-testid="author-search"
@@ -28,7 +30,9 @@
       <label for="author-name">Name</label>
       <input
         id="author-name"
+        name="name"
         type="text"
+        autocomplete="off"
         formControlName="name"
         [class.invalid]="form.controls.name.invalid && form.controls.name.touched"
         data-testid="author-form-name"
@@ -43,6 +47,8 @@
       <label for="author-bio">Bio</label>
       <textarea
         id="author-bio"
+        name="bio"
+        autocomplete="off"
         formControlName="bio"
         rows="4"
         [class.invalid]="form.controls.bio.invalid && form.controls.bio.touched"
@@ -54,7 +60,7 @@
 
       <div class="form-actions">
         <button type="submit" class="btn-primary" [disabled]="saving()" data-testid="save-button">
-          {{ saving() ? 'Saving...' : 'Save' }}
+          {{ saving() ? 'Saving…' : 'Save' }}
         </button>
         <button type="button" class="btn-secondary" (click)="cancelEdit()" data-testid="cancel-button">
           Cancel
@@ -64,7 +70,7 @@
   }
 
   @if (loading()) {
-    <div class="status" aria-live="polite" data-testid="loading-indicator">Loading...</div>
+    <div class="status" aria-live="polite" data-testid="loading-indicator">Loading…</div>
   }
 
   @if (data(); as result) {
@@ -88,10 +94,16 @@
           @for (author of result.items; track author.id) {
             <tr data-testid="author-row">
               <td data-testid="author-name">{{ author.name }}</td>
-              <td data-testid="author-bio">{{ author.bio || '—' }}</td>
+              <td data-testid="author-bio" class="bio-cell" [attr.title]="author.bio || null">{{ author.bio || '—' }}</td>
               <td class="actions">
-                <button type="button" class="btn-link" (click)="startEdit(author)" data-testid="author-edit">Edit</button>
-                <button type="button" class="btn-link danger" (click)="deleteAuthor(author)" data-testid="author-delete">Delete</button>
+                @if (confirmingDelete() === author) {
+                  <span class="confirm-text">Delete?</span>
+                  <button type="button" class="btn-link danger" (click)="confirmDelete(author)" data-testid="author-delete-confirm">Delete</button>
+                  <button type="button" class="btn-link" (click)="cancelDelete()" data-testid="author-delete-cancel">Cancel</button>
+                } @else {
+                  <button type="button" class="btn-link" (click)="startEdit(author)" data-testid="author-edit">Edit</button>
+                  <button type="button" class="btn-link danger" (click)="requestDelete(author)" data-testid="author-delete">Delete</button>
+                }
               </td>
             </tr>
           }
