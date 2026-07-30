@@ -4,11 +4,12 @@
       <span class="brand-icon">📚</span>
       <h1>{{ title }}</h1>
     </div>
-    <nav class="main-nav" aria-label="Main sections">
+    <nav class="main-nav" aria-label="Main sections" data-testid="main-nav">
       @for (section of sections; track section.path) {
         <a
           [routerLink]="section.path"
           routerLinkActive="active"
+          [attr.data-testid]="'nav-' + section.path.substring(1)"
         >
           {{ section.label }}
         </a>
@@ -17,9 +18,9 @@
   </header>
 
   @if (errorService.messageSignal()) {
-    <div class="global-banner" role="alert">
+    <div class="global-banner" role="alert" data-testid="error-banner">
       <span>{{ errorService.messageSignal() }}</span>
-      <button type="button" (click)="errorService.clear()" aria-label="Dismiss">×</button>
+      <button type="button" (click)="errorService.clear()" aria-label="Dismiss" data-testid="error-dismiss">×</button>
     </div>
   }
 

@@ -128,8 +128,9 @@ Key decisions are captured in ADRs under `docs/adr/`:
 
 - **Unit tests** (`backend/tests/Philobiblos.UnitTests/`): validator rules, ISBN checksum logic, pagination bounds, and business-rule branches that do not depend on real persistence.
 - **Integration tests** (`backend/tests/Philobiblos.IntegrationTests/`): `WebApplicationFactory` + Testcontainers PostgreSQL. Each scenario hits the real HTTP boundary with real migrations and persistence, including 400/404/409 shapes, pagination metadata, and sort whitelist rejection.
+- **End-to-end tests** (`frontend/e2e/`): Playwright tests against the full Docker Compose stack. They verify the Angular SPA: navigation, loading/empty states, search and pagination, create/edit/delete forms, server error mapping, book relationship visibility, and API error handling.
 
-Run all tests:
+Run all backend tests:
 
 ```bash
 cd backend
@@ -138,13 +139,26 @@ dotnet test
 
 > Docker is required for integration tests. To run only unit tests: `dotnet test --filter FullyQualifiedName~UnitTests`
 
+Run the full e2e suite (builds and starts the stack, runs Playwright, tears down):
+
+```bash
+cd frontend
+npm run test:e2e:ci
+```
+
+To run e2e tests against an already-running stack:
+
+```bash
+cd frontend
+npm run test:e2e
+```
+
 ## Known limitations
 
 - No authentication or authorization.
 - No audit logging or audit columns.
 - No soft deletes; records are physically removed.
 - No OpenTelemetry exporters, CI pipeline, or deployment target beyond Docker Compose.
-- No client-side e2e tests.
 
 ## Improvements with more time
 

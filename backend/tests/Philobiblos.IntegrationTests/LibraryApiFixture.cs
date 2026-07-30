@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,6 +42,11 @@ public sealed class LibraryApiFixture : IAsyncLifetime
             .WithWebHostBuilder(builder =>
             {
                 builder.UseSetting("ConnectionStrings:Library", _postgres.GetConnectionString());
+
+                builder.ConfigureServices(services =>
+                {
+                    services.AddSingleton<IStartupFilter, TestEndpointStartupFilter>();
+                });
             });
 
         using var scope = Factory.Services.CreateScope();
@@ -64,4 +71,21 @@ public sealed class LibraryApiFixture : IAsyncLifetime
         await Factory.DisposeAsync();
         await _postgres.DisposeAsync();
     }
+}
+
+public sealed class TestEndpointStartupFilter : IStartupFilter
+{
+    public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) =>
+        app =>
+        {
+            next(app);
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapGet("/api/test/throw", () =>
+                {
+                    throw new InvalidOperationException("Intentional test exception.");
+                });
+            });
+        };
 }

@@ -1,13 +1,13 @@
-<div class="catalog">
+<div class="catalog" data-testid="authors-section">
   <div class="catalog-header">
     <h2>Authors</h2>
-    <button type="button" class="btn-primary" (click)="startCreate()">
+    <button type="button" class="btn-primary" (click)="startCreate()" data-testid="new-author-button">
       + New author
     </button>
   </div>
 
   @if (message()) {
-    <div class="banner success" role="status">{{ message() }}</div>
+    <div class="banner success" role="status" data-testid="success-message">{{ message() }}</div>
   }
 
   <div class="toolbar">
@@ -16,11 +16,12 @@
       placeholder="Search authors..."
       [value]="search()"
       (input)="onSearch($any($event).target.value)"
+      data-testid="author-search"
     />
   </div>
 
   @if (isEditing()) {
-    <form class="editor" [formGroup]="form" (ngSubmit)="save()">
+    <form class="editor" [formGroup]="form" (ngSubmit)="save()" data-testid="author-form">
       <h3>{{ editing() ? 'Edit author' : 'New author' }}</h3>
       <input type="hidden" formControlName="id" />
 
@@ -30,12 +31,13 @@
         type="text"
         formControlName="name"
         [class.invalid]="form.controls.name.invalid && form.controls.name.touched"
+        data-testid="author-form-name"
       />
       @if (form.controls.name.errors?.['server']) {
-        <span class="field-error">{{ form.controls.name.errors?.['server'] }}</span>
+        <span class="field-error" data-testid="author-form-name-error">{{ form.controls.name.errors?.['server'] }}</span>
       }
       @if (form.controls.name.invalid && form.controls.name.touched && !form.controls.name.errors?.['server']) {
-        <span class="field-error">Name is required.</span>
+        <span class="field-error" data-testid="author-form-name-required">Name is required.</span>
       }
 
       <label for="author-bio">Bio</label>
@@ -44,16 +46,17 @@
         formControlName="bio"
         rows="4"
         [class.invalid]="form.controls.bio.invalid && form.controls.bio.touched"
+        data-testid="author-form-bio"
       ></textarea>
       @if (form.controls.bio.errors?.['server']) {
-        <span class="field-error">{{ form.controls.bio.errors?.['server'] }}</span>
+        <span class="field-error" data-testid="author-form-bio-error">{{ form.controls.bio.errors?.['server'] }}</span>
       }
 
       <div class="form-actions">
-        <button type="submit" class="btn-primary" [disabled]="saving()">
+        <button type="submit" class="btn-primary" [disabled]="saving()" data-testid="save-button">
           {{ saving() ? 'Saving...' : 'Save' }}
         </button>
-        <button type="button" class="btn-secondary" (click)="cancelEdit()">
+        <button type="button" class="btn-secondary" (click)="cancelEdit()" data-testid="cancel-button">
           Cancel
         </button>
       </div>
@@ -61,19 +64,19 @@
   }
 
   @if (loading()) {
-    <div class="status" aria-live="polite">Loading...</div>
+    <div class="status" aria-live="polite" data-testid="loading-indicator">Loading...</div>
   }
 
   @if (data(); as result) {
     @if (result.items.length === 0) {
-      <div class="status empty">
+      <div class="status empty" data-testid="empty-state">
         <p>No authors found.</p>
         @if (search()) {
-          <button type="button" class="btn-link" (click)="onSearch('')">Clear search</button>
+          <button type="button" class="btn-link" (click)="onSearch('')" data-testid="clear-search">Clear search</button>
         }
       </div>
     } @else {
-      <table class="data-table">
+      <table class="data-table" data-testid="authors-table">
         <thead>
           <tr>
             <th>Name</th>
@@ -83,12 +86,12 @@
         </thead>
         <tbody>
           @for (author of result.items; track author.id) {
-            <tr>
-              <td>{{ author.name }}</td>
-              <td>{{ author.bio || '—' }}</td>
+            <tr data-testid="author-row">
+              <td data-testid="author-name">{{ author.name }}</td>
+              <td data-testid="author-bio">{{ author.bio || '—' }}</td>
               <td class="actions">
-                <button type="button" class="btn-link" (click)="startEdit(author)">Edit</button>
-                <button type="button" class="btn-link danger" (click)="deleteAuthor(author)">Delete</button>
+                <button type="button" class="btn-link" (click)="startEdit(author)" data-testid="author-edit">Edit</button>
+                <button type="button" class="btn-link danger" (click)="deleteAuthor(author)" data-testid="author-delete">Delete</button>
               </td>
             </tr>
           }

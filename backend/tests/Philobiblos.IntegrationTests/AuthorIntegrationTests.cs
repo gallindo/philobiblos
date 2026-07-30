@@ -175,6 +175,130 @@ public sealed class AuthorIntegrationTests : IAsyncLifetime
         document!.RootElement.GetProperty("errors").TryGetProperty("sort", out _).Should().BeTrue();
     }
 
+    [Fact]
+    public async Task CreateAuthor_with_name_longer_than_150_characters_returns_400()
+    {
+        var name = new string('x', 151);
+
+        var response = await _client.PostAsJsonAsync("/api/authors", new { name, bio = (string?)null }, JsonOptions);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var document = await response.Content.ReadFromJsonAsync<JsonDocument>(JsonOptions);
+        document!.RootElement.GetProperty("errors").TryGetProperty("name", out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CreateAuthor_with_bio_longer_than_2000_characters_returns_400()
+    {
+        var bio = new string('x', 2001);
+
+        var response = await _client.PostAsJsonAsync("/api/authors", new { name = "Valid", bio }, JsonOptions);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var document = await response.Content.ReadFromJsonAsync<JsonDocument>(JsonOptions);
+        document!.RootElement.GetProperty("errors").TryGetProperty("bio", out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ListAuthors_sorts_by_name_descending()
+    {
+        await CreateAuthorAsync("Alpha");
+        await CreateAuthorAsync("Beta");
+        await CreateAuthorAsync("Gamma");
+
+        var response = await _client.GetAsync("/api/authors?sort=name&direction=desc");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var envelope = await response.Content.ReadFromJsonAsync<PagedResult<AuthorResponse>>(JsonOptions);
+        envelope!.Items.Select(author => author.Name).Should().BeInDescendingOrder();
+    }
+
+    [Fact]
+    public async Task ListAuthors_without_sort_returns_default_order()
+    {
+        await CreateAuthorAsync("Gamma");
+        await CreateAuthorAsync("Alpha");
+        await CreateAuthorAsync("Beta");
+
+        var response = await _client.GetAsync("/api/authors?pageSize=2");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var envelope = await response.Content.ReadFromJsonAsync<PagedResult<AuthorResponse>>(JsonOptions);
+        envelope!.Items.Select(author => author.Name).Should().BeInAscendingOrder();
+        envelope.TotalCount.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task UpdateAuthor_with_empty_name_returns_400()
+    {
+        var id = await CreateAuthorAsync("Valid");
+
+        var response = await _client.PutAsJsonAsync($"/api/authors/{id}", new { name = "", bio = (string?)null }, JsonOptions);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var document = await response.Content.ReadFromJsonAsync<JsonDocument>(JsonOptions);
+        document!.RootElement.GetProperty("errors").TryGetProperty("name", out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task UpdateAuthor_with_name_too_long_returns_400()
+    {
+        var id = await CreateAuthorAsync("Valid");
+        var name = new string('x', 151);
+
+        var response = await _client.PutAsJsonAsync($"/api/authors/{id}", new { name, bio = (string?)null }, JsonOptions);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var document = await response.Content.ReadFromJsonAsync<JsonDocument>(JsonOptions);
+        document!.RootElement.GetProperty("errors").TryGetProperty("name", out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task UpdateAuthor_with_bio_too_long_returns_400()
+    {
+        var id = await CreateAuthorAsync("Valid");
+        var bio = new string('x', 2001);
+
+        var response = await _client.PutAsJsonAsync($"/api/authors/{id}", new { name = "Valid", bio }, JsonOptions);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var document = await response.Content.ReadFromJsonAsync<JsonDocument>(JsonOptions);
+        document!.RootElement.GetProperty("errors").TryGetProperty("bio", out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task UpdateAuthor_returns_404_when_missing()
+    {
+        var response = await _client.PutAsJsonAsync(
+            $"/api/authors/{Guid.NewGuid()}",
+            new { name = "Name", bio = (string?)null },
+            JsonOptions);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteAuthor_returns_404_when_missing()
+    {
+        var response = await _client.DeleteAsync($"/api/authors/{Guid.NewGuid()}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task ListAuthors_with_invalid_pagination_returns_400()
+    {
+        var response = await _client.GetAsync("/api/authors?page=0&pageSize=101");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.Content.Headers.ContentType?.MediaType.Should().Be("application/problem+json");
+    }
+
     private async Task<Guid> CreateAuthorAsync(string name)
     {
         var response = await _client.PostAsJsonAsync("/api/authors", new { name, bio = (string?)null }, JsonOptions);

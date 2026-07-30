@@ -202,6 +202,76 @@ public sealed class GenreIntegrationTests : IAsyncLifetime
         document!.RootElement.GetProperty("errors").TryGetProperty("sort", out _).Should().BeTrue();
     }
 
+    [Fact]
+    public async Task CreateGenre_with_name_longer_than_100_characters_returns_400()
+    {
+        var name = new string('x', 101);
+
+        var response = await _client.PostAsJsonAsync("/api/genres", new { name }, JsonOptions);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.Content.Headers.ContentType?.MediaType.Should().Be("application/problem+json");
+
+        var document = await response.Content.ReadFromJsonAsync<JsonDocument>(JsonOptions);
+        document!.RootElement.GetProperty("errors").TryGetProperty("name", out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ListGenres_sorts_by_name_descending()
+    {
+        await CreateGenreAsync("Alpha");
+        await CreateGenreAsync("Beta");
+        await CreateGenreAsync("Gamma");
+
+        var response = await _client.GetAsync("/api/genres?sort=name&direction=desc");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var envelope = await response.Content.ReadFromJsonAsync<PagedResult<GenreResponse>>(JsonOptions);
+        envelope!.Items.Select(genre => genre.Name).Should().BeInDescendingOrder();
+    }
+
+    [Fact]
+    public async Task ListGenres_without_sort_returns_default_order()
+    {
+        await CreateGenreAsync("Gamma");
+        await CreateGenreAsync("Alpha");
+        await CreateGenreAsync("Beta");
+
+        var response = await _client.GetAsync("/api/genres?pageSize=2");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var envelope = await response.Content.ReadFromJsonAsync<PagedResult<GenreResponse>>(JsonOptions);
+        envelope!.Items.Select(genre => genre.Name).Should().BeInAscendingOrder();
+        envelope.TotalCount.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task UpdateGenre_with_empty_name_returns_400()
+    {
+        var id = await CreateGenreAsync("Valid");
+
+        var response = await _client.PutAsJsonAsync($"/api/genres/{id}", new { name = "   " }, JsonOptions);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var document = await response.Content.ReadFromJsonAsync<JsonDocument>(JsonOptions);
+        document!.RootElement.GetProperty("errors").TryGetProperty("name", out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task UpdateGenre_with_name_too_long_returns_400()
+    {
+        var id = await CreateGenreAsync("Valid");
+        var name = new string('x', 101);
+
+        var response = await _client.PutAsJsonAsync($"/api/genres/{id}", new { name }, JsonOptions);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var document = await response.Content.ReadFromJsonAsync<JsonDocument>(JsonOptions);
+        document!.RootElement.GetProperty("errors").TryGetProperty("name", out _).Should().BeTrue();
+    }
+
     private async Task<Guid> CreateGenreAsync(string name)
     {
         var response = await _client.PostAsJsonAsync("/api/genres", new { name }, JsonOptions);

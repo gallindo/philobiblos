@@ -1,13 +1,13 @@
-<div class="catalog">
+<div class="catalog" data-testid="genres-section">
   <div class="catalog-header">
     <h2>Genres</h2>
-    <button type="button" class="btn-primary" (click)="startCreate()">
+    <button type="button" class="btn-primary" (click)="startCreate()" data-testid="new-genre-button">
       + New genre
     </button>
   </div>
 
   @if (message()) {
-    <div class="banner success" role="status">{{ message() }}</div>
+    <div class="banner success" role="status" data-testid="success-message">{{ message() }}</div>
   }
 
   <div class="toolbar">
@@ -16,11 +16,12 @@
       placeholder="Search genres..."
       [value]="search()"
       (input)="onSearch($any($event).target.value)"
+      data-testid="genre-search"
     />
   </div>
 
   @if (isEditing()) {
-    <form class="editor" [formGroup]="form" (ngSubmit)="save()">
+    <form class="editor" [formGroup]="form" (ngSubmit)="save()" data-testid="genre-form">
       <h3>{{ editing() ? 'Edit genre' : 'New genre' }}</h3>
       <input type="hidden" formControlName="id" />
 
@@ -30,19 +31,20 @@
         type="text"
         formControlName="name"
         [class.invalid]="form.controls.name.invalid && form.controls.name.touched"
+        data-testid="genre-form-name"
       />
       @if (form.controls.name.errors?.['server']) {
-        <span class="field-error">{{ form.controls.name.errors?.['server'] }}</span>
+        <span class="field-error" data-testid="genre-form-name-error">{{ form.controls.name.errors?.['server'] }}</span>
       }
       @if (form.controls.name.invalid && form.controls.name.touched && !form.controls.name.errors?.['server']) {
-        <span class="field-error">Name is required.</span>
+        <span class="field-error" data-testid="genre-form-name-required">Name is required.</span>
       }
 
       <div class="form-actions">
-        <button type="submit" class="btn-primary" [disabled]="saving()">
+        <button type="submit" class="btn-primary" [disabled]="saving()" data-testid="save-button">
           {{ saving() ? 'Saving...' : 'Save' }}
         </button>
-        <button type="button" class="btn-secondary" (click)="cancelEdit()">
+        <button type="button" class="btn-secondary" (click)="cancelEdit()" data-testid="cancel-button">
           Cancel
         </button>
       </div>
@@ -50,19 +52,19 @@
   }
 
   @if (loading()) {
-    <div class="status" aria-live="polite">Loading...</div>
+    <div class="status" aria-live="polite" data-testid="loading-indicator">Loading...</div>
   }
 
   @if (data(); as result) {
     @if (result.items.length === 0) {
-      <div class="status empty">
+      <div class="status empty" data-testid="empty-state">
         <p>No genres found.</p>
         @if (search()) {
-          <button type="button" class="btn-link" (click)="onSearch('')">Clear search</button>
+          <button type="button" class="btn-link" (click)="onSearch('')" data-testid="clear-search">Clear search</button>
         }
       </div>
     } @else {
-      <table class="data-table">
+      <table class="data-table" data-testid="genres-table">
         <thead>
           <tr>
             <th>Name</th>
@@ -71,11 +73,11 @@
         </thead>
         <tbody>
           @for (genre of result.items; track genre.id) {
-            <tr>
-              <td>{{ genre.name }}</td>
+            <tr data-testid="genre-row">
+              <td data-testid="genre-name">{{ genre.name }}</td>
               <td class="actions">
-                <button type="button" class="btn-link" (click)="startEdit(genre)">Edit</button>
-                <button type="button" class="btn-link danger" (click)="deleteGenre(genre)">Delete</button>
+                <button type="button" class="btn-link" (click)="startEdit(genre)" data-testid="genre-edit">Edit</button>
+                <button type="button" class="btn-link danger" (click)="deleteGenre(genre)" data-testid="genre-delete">Delete</button>
               </td>
             </tr>
           }

@@ -1,5 +1,5 @@
-<div class="pagination">
-  <span class="info">
+<div class="pagination" data-testid="pagination">
+  <span class="info" data-testid="pagination-info">
     {{ start }}–{{ end }} of {{ totalCount() }}
   </span>
   <div class="controls">
@@ -7,14 +7,16 @@
       type="button"
       (click)="goToPage(page() - 1)"
       [disabled]="page() <= 1"
+      data-testid="pagination-previous"
     >
       Previous
     </button>
-    <span class="page-number">Page {{ page() }} of {{ totalPages }}</span>
+    <span class="page-number" data-testid="pagination-page-number">Page {{ page() }} of {{ totalPages }}</span>
     <button
       type="button"
       (click)="goToPage(page() + 1)"
       [disabled]="page() >= totalPages"
+      data-testid="pagination-next"
     >
       Next
     </button>

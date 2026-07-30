@@ -44,7 +44,6 @@ export class GenreListComponent implements OnInit {
 
   load(): void {
     this.loading.set(true);
-    this.message.set(null);
     this.errorService.clear();
 
     const params: GenreListParams = {
@@ -150,7 +149,10 @@ export class GenreListComponent implements OnInit {
     }
 
     for (const [key, message] of Object.entries(error.fieldErrors)) {
-      const control = this.form.get(key);
+      const controlName = Object.keys(this.form.controls).find(
+        (name) => name.toLowerCase() === key.toLowerCase()
+      );
+      const control = controlName ? this.form.get(controlName) : null;
       if (control) {
         control.setErrors({ server: message });
       }

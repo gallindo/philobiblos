@@ -273,6 +273,209 @@ public sealed class BookIntegrationTests : IAsyncLifetime
         document!.RootElement.GetProperty("errors").TryGetProperty("sort", out _).Should().BeTrue();
     }
 
+    [Fact]
+    public async Task CreateBook_with_empty_title_returns_400()
+    {
+        var authorId = await CreateAuthorAsync("Author");
+        var genreId = await CreateGenreAsync("Genre");
+
+        var response = await _client.PostAsJsonAsync("/api/books", new
+        {
+            title = "   ",
+            authorId,
+            genreId,
+            isbn = (string?)null,
+            publishedYear = (int?)null
+        }, JsonOptions);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var document = await response.Content.ReadFromJsonAsync<JsonDocument>(JsonOptions);
+        document!.RootElement.GetProperty("errors").TryGetProperty("title", out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CreateBook_with_title_too_long_returns_400()
+    {
+        var authorId = await CreateAuthorAsync("Author");
+        var genreId = await CreateGenreAsync("Genre");
+        var title = new string('x', 201);
+
+        var response = await _client.PostAsJsonAsync("/api/books", new
+        {
+            title,
+            authorId,
+            genreId,
+            isbn = (string?)null,
+            publishedYear = (int?)null
+        }, JsonOptions);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var document = await response.Content.ReadFromJsonAsync<JsonDocument>(JsonOptions);
+        document!.RootElement.GetProperty("errors").TryGetProperty("title", out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CreateBook_with_invalid_isbn_returns_400()
+    {
+        var authorId = await CreateAuthorAsync("Author");
+        var genreId = await CreateGenreAsync("Genre");
+
+        var response = await _client.PostAsJsonAsync("/api/books", new
+        {
+            title = "Title",
+            authorId,
+            genreId,
+            isbn = "not-an-isbn",
+            publishedYear = (int?)null
+        }, JsonOptions);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var document = await response.Content.ReadFromJsonAsync<JsonDocument>(JsonOptions);
+        document!.RootElement.GetProperty("errors").TryGetProperty("isbn", out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CreateBook_without_isbn_returns_201_with_null_isbn()
+    {
+        var authorId = await CreateAuthorAsync("Author");
+        var genreId = await CreateGenreAsync("Genre");
+
+        var response = await _client.PostAsJsonAsync("/api/books", new
+        {
+            title = "Title",
+            authorId,
+            genreId,
+            publishedYear = (int?)null
+        }, JsonOptions);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var book = await response.Content.ReadFromJsonAsync<BookResponse>(JsonOptions);
+        book!.Isbn.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ListBooks_filters_by_authorId_alone()
+    {
+        var authorA = await CreateAuthorAsync("Author A");
+        var authorB = await CreateAuthorAsync("Author B");
+        var genre = await CreateGenreAsync("Genre");
+
+        await CreateBookAsync("Book A", authorA, genre);
+        await CreateBookAsync("Book B", authorB, genre);
+
+        var response = await _client.GetAsync($"/api/books?authorId={authorA}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var envelope = await response.Content.ReadFromJsonAsync<PagedResult<BookResponse>>(JsonOptions);
+        envelope!.Items.Should().ContainSingle(book => book.Title == "Book A");
+        envelope.TotalCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ListBooks_filters_by_genreId_alone()
+    {
+        var author = await CreateAuthorAsync("Author");
+        var genreA = await CreateGenreAsync("Genre A");
+        var genreB = await CreateGenreAsync("Genre B");
+
+        await CreateBookAsync("Book A", author, genreA);
+        await CreateBookAsync("Book B", author, genreB);
+
+        var response = await _client.GetAsync($"/api/books?genreId={genreA}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var envelope = await response.Content.ReadFromJsonAsync<PagedResult<BookResponse>>(JsonOptions);
+        envelope!.Items.Should().ContainSingle(book => book.Title == "Book A");
+        envelope.TotalCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ListBooks_without_sort_returns_default_order()
+    {
+        var author = await CreateAuthorAsync("Author");
+        var genre = await CreateGenreAsync("Genre");
+
+        await CreateBookAsync("Gamma Book", author, genre);
+        await CreateBookAsync("Alpha Book", author, genre);
+        await CreateBookAsync("Beta Book", author, genre);
+
+        var response = await _client.GetAsync("/api/books?pageSize=2");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var envelope = await response.Content.ReadFromJsonAsync<PagedResult<BookResponse>>(JsonOptions);
+        envelope!.Items.Select(book => book.Title).Should().BeInAscendingOrder();
+        envelope.TotalCount.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task UpdateBook_with_duplicate_isbn_returns_409()
+    {
+        var authorId = await CreateAuthorAsync("Author");
+        var genreId = await CreateGenreAsync("Genre");
+
+        var bookA = await CreateBookAsync("Book A", authorId, genreId, isbn: "978-0-306-40615-7");
+        var bookB = await CreateBookAsync("Book B", authorId, genreId, isbn: "978-1-4028-9462-6");
+
+        var response = await _client.PutAsJsonAsync($"/api/books/{bookB}", new
+        {
+            title = "Book B Updated",
+            authorId,
+            genreId,
+            isbn = "9780306406157",
+            publishedYear = (int?)null
+        }, JsonOptions);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        response.Content.Headers.ContentType?.MediaType.Should().Be("application/problem+json");
+    }
+
+    [Fact]
+    public async Task UpdateBook_with_missing_references_returns_400()
+    {
+        var authorId = await CreateAuthorAsync("Author");
+        var genreId = await CreateGenreAsync("Genre");
+        var bookId = await CreateBookAsync("Book", authorId, genreId);
+        var missingAuthorId = Guid.NewGuid();
+        var missingGenreId = Guid.NewGuid();
+
+        var response = await _client.PutAsJsonAsync($"/api/books/{bookId}", new
+        {
+            title = "Updated",
+            authorId = missingAuthorId,
+            genreId = missingGenreId,
+            isbn = (string?)null,
+            publishedYear = (int?)null
+        }, JsonOptions);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var document = await response.Content.ReadFromJsonAsync<JsonDocument>(JsonOptions);
+        var errors = document!.RootElement.GetProperty("errors");
+        errors.TryGetProperty("authorId", out _).Should().BeTrue();
+        errors.TryGetProperty("genreId", out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DeleteBook_returns_404_when_missing()
+    {
+        var response = await _client.DeleteAsync($"/api/books/{Guid.NewGuid()}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task ListBooks_with_invalid_pagination_returns_400()
+    {
+        var response = await _client.GetAsync("/api/books?page=0&pageSize=101");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.Content.Headers.ContentType?.MediaType.Should().Be("application/problem+json");
+    }
+
     private async Task<Guid> CreateAuthorAsync(string name)
     {
         var response = await _client.PostAsJsonAsync("/api/authors", new { name, bio = (string?)null }, JsonOptions);

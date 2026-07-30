@@ -1,13 +1,13 @@
-<div class="catalog">
+<div class="catalog" data-testid="books-section">
   <div class="catalog-header">
     <h2>Books</h2>
-    <button type="button" class="btn-primary" (click)="startCreate()">
+    <button type="button" class="btn-primary" (click)="startCreate()" data-testid="new-book-button">
       + New book
     </button>
   </div>
 
   @if (message()) {
-    <div class="banner success" role="status">{{ message() }}</div>
+    <div class="banner success" role="status" data-testid="success-message">{{ message() }}</div>
   }
 
   <div class="toolbar">
@@ -16,14 +16,15 @@
       placeholder="Search titles..."
       [value]="search()"
       (input)="onSearch($any($event).target.value)"
+      data-testid="book-search"
     />
-    <select [value]="authorFilter()" (change)="authorFilter.set($any($event).target.value); onFilterChange()">
+    <select [value]="authorFilter()" (change)="authorFilter.set($any($event).target.value); onFilterChange()" data-testid="author-filter">
       <option value="">All authors</option>
       @for (author of authors(); track author.id) {
         <option [value]="author.id">{{ author.name }}</option>
       }
     </select>
-    <select [value]="genreFilter()" (change)="genreFilter.set($any($event).target.value); onFilterChange()">
+    <select [value]="genreFilter()" (change)="genreFilter.set($any($event).target.value); onFilterChange()" data-testid="genre-filter">
       <option value="">All genres</option>
       @for (genre of genres(); track genre.id) {
         <option [value]="genre.id">{{ genre.name }}</option>
@@ -32,7 +33,7 @@
   </div>
 
   @if (isEditing()) {
-    <form class="editor" [formGroup]="form" (ngSubmit)="save()">
+    <form class="editor" [formGroup]="form" (ngSubmit)="save()" data-testid="book-form">
       <h3>{{ editing() ? 'Edit book' : 'New book' }}</h3>
       <input type="hidden" formControlName="id" />
 
@@ -42,12 +43,13 @@
         type="text"
         formControlName="title"
         [class.invalid]="form.controls.title.invalid && form.controls.title.touched"
+        data-testid="book-form-title"
       />
       @if (form.controls.title.errors?.['server']) {
-        <span class="field-error">{{ form.controls.title.errors?.['server'] }}</span>
+        <span class="field-error" data-testid="book-form-title-error">{{ form.controls.title.errors?.['server'] }}</span>
       }
       @if (form.controls.title.invalid && form.controls.title.touched && !form.controls.title.errors?.['server']) {
-        <span class="field-error">Title is required.</span>
+        <span class="field-error" data-testid="book-form-title-required">Title is required.</span>
       }
 
       <label for="book-author">Author</label>
@@ -55,6 +57,7 @@
         id="book-author"
         formControlName="authorId"
         [class.invalid]="form.controls.authorId.invalid && form.controls.authorId.touched"
+        data-testid="book-form-author"
       >
         <option value="" disabled>Select an author</option>
         @for (author of authors(); track author.id) {
@@ -62,10 +65,10 @@
         }
       </select>
       @if (form.controls.authorId.errors?.['server']) {
-        <span class="field-error">{{ form.controls.authorId.errors?.['server'] }}</span>
+        <span class="field-error" data-testid="book-form-author-error">{{ form.controls.authorId.errors?.['server'] }}</span>
       }
       @if (form.controls.authorId.invalid && form.controls.authorId.touched && !form.controls.authorId.errors?.['server']) {
-        <span class="field-error">Author is required.</span>
+        <span class="field-error" data-testid="book-form-author-required">Author is required.</span>
       }
 
       <label for="book-genre">Genre</label>
@@ -73,6 +76,7 @@
         id="book-genre"
         formControlName="genreId"
         [class.invalid]="form.controls.genreId.invalid && form.controls.genreId.touched"
+        data-testid="book-form-genre"
       >
         <option value="" disabled>Select a genre</option>
         @for (genre of genres(); track genre.id) {
@@ -80,10 +84,10 @@
         }
       </select>
       @if (form.controls.genreId.errors?.['server']) {
-        <span class="field-error">{{ form.controls.genreId.errors?.['server'] }}</span>
+        <span class="field-error" data-testid="book-form-genre-error">{{ form.controls.genreId.errors?.['server'] }}</span>
       }
       @if (form.controls.genreId.invalid && form.controls.genreId.touched && !form.controls.genreId.errors?.['server']) {
-        <span class="field-error">Genre is required.</span>
+        <span class="field-error" data-testid="book-form-genre-required">Genre is required.</span>
       }
 
       <label for="book-isbn">ISBN</label>
@@ -92,9 +96,10 @@
         type="text"
         formControlName="isbn"
         [class.invalid]="form.controls.isbn.invalid && form.controls.isbn.touched"
+        data-testid="book-form-isbn"
       />
       @if (form.controls.isbn.errors?.['server']) {
-        <span class="field-error">{{ form.controls.isbn.errors?.['server'] }}</span>
+        <span class="field-error" data-testid="book-form-isbn-error">{{ form.controls.isbn.errors?.['server'] }}</span>
       }
 
       <label for="book-year">Published year</label>
@@ -103,16 +108,17 @@
         type="number"
         formControlName="publishedYear"
         [class.invalid]="form.controls.publishedYear.invalid && form.controls.publishedYear.touched"
+        data-testid="book-form-published-year"
       />
       @if (form.controls.publishedYear.errors?.['server']) {
-        <span class="field-error">{{ form.controls.publishedYear.errors?.['server'] }}</span>
+        <span class="field-error" data-testid="book-form-published-year-error">{{ form.controls.publishedYear.errors?.['server'] }}</span>
       }
 
       <div class="form-actions">
-        <button type="submit" class="btn-primary" [disabled]="saving()">
+        <button type="submit" class="btn-primary" [disabled]="saving()" data-testid="save-button">
           {{ saving() ? 'Saving...' : 'Save' }}
         </button>
-        <button type="button" class="btn-secondary" (click)="cancelEdit()">
+        <button type="button" class="btn-secondary" (click)="cancelEdit()" data-testid="cancel-button">
           Cancel
         </button>
       </div>
@@ -120,21 +126,21 @@
   }
 
   @if (loading()) {
-    <div class="status" aria-live="polite">Loading...</div>
+    <div class="status" aria-live="polite" data-testid="loading-indicator">Loading...</div>
   }
 
   @if (data(); as result) {
     @if (result.items.length === 0) {
-      <div class="status empty">
+      <div class="status empty" data-testid="empty-state">
         <p>No books found.</p>
         @if (search() || authorFilter() || genreFilter()) {
-          <button type="button" class="btn-link" (click)="search.set(''); authorFilter.set(''); genreFilter.set(''); onFilterChange()">
+          <button type="button" class="btn-link" (click)="search.set(''); authorFilter.set(''); genreFilter.set(''); onFilterChange()" data-testid="clear-filters">
             Clear filters
           </button>
         }
       </div>
     } @else {
-      <table class="data-table">
+      <table class="data-table" data-testid="books-table">
         <thead>
           <tr>
             <th>Title</th>
@@ -147,15 +153,15 @@
         </thead>
         <tbody>
           @for (book of result.items; track book.id) {
-            <tr>
-              <td>{{ book.title }}</td>
-              <td>{{ book.author.name }}</td>
-              <td>{{ book.genre.name }}</td>
-              <td>{{ book.isbn || '—' }}</td>
-              <td>{{ book.publishedYear ?? '—' }}</td>
+            <tr data-testid="book-row">
+              <td data-testid="book-title">{{ book.title }}</td>
+              <td data-testid="book-author">{{ book.author.name }}</td>
+              <td data-testid="book-genre">{{ book.genre.name }}</td>
+              <td data-testid="book-isbn">{{ book.isbn || '—' }}</td>
+              <td data-testid="book-year">{{ book.publishedYear ?? '—' }}</td>
               <td class="actions">
-                <button type="button" class="btn-link" (click)="startEdit(book)">Edit</button>
-                <button type="button" class="btn-link danger" (click)="deleteBook(book)">Delete</button>
+                <button type="button" class="btn-link" (click)="startEdit(book)" data-testid="book-edit">Edit</button>
+                <button type="button" class="btn-link danger" (click)="deleteBook(book)" data-testid="book-delete">Delete</button>
               </td>
             </tr>
           }
