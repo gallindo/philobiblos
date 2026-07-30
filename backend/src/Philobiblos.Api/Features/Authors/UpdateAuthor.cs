@@ -35,7 +35,7 @@ public static class UpdateAuthor
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesValidationProblem();
 
-    private static async Task<Ok<AuthorResponse>> Handle(
+    internal static async Task<Ok<AuthorResponse>> Handle(
         Guid id,
         UpdateAuthorRequest request,
         LibraryDbContext db,

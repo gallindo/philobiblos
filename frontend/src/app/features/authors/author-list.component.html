@@ -1,0 +1,108 @@
+<div class="catalog">
+  <div class="catalog-header">
+    <h2>Authors</h2>
+    <button type="button" class="btn-primary" (click)="startCreate()">
+      + New author
+    </button>
+  </div>
+
+  @if (message()) {
+    <div class="banner success" role="status">{{ message() }}</div>
+  }
+
+  <div class="toolbar">
+    <input
+      type="search"
+      placeholder="Search authors..."
+      [value]="search()"
+      (input)="onSearch($any($event).target.value)"
+    />
+  </div>
+
+  @if (isEditing()) {
+    <form class="editor" [formGroup]="form" (ngSubmit)="save()">
+      <h3>{{ editing() ? 'Edit author' : 'New author' }}</h3>
+      <input type="hidden" formControlName="id" />
+
+      <label for="author-name">Name</label>
+      <input
+        id="author-name"
+        type="text"
+        formControlName="name"
+        [class.invalid]="form.controls.name.invalid && form.controls.name.touched"
+      />
+      @if (form.controls.name.errors?.['server']) {
+        <span class="field-error">{{ form.controls.name.errors?.['server'] }}</span>
+      }
+      @if (form.controls.name.invalid && form.controls.name.touched && !form.controls.name.errors?.['server']) {
+        <span class="field-error">Name is required.</span>
+      }
+
+      <label for="author-bio">Bio</label>
+      <textarea
+        id="author-bio"
+        formControlName="bio"
+        rows="4"
+        [class.invalid]="form.controls.bio.invalid && form.controls.bio.touched"
+      ></textarea>
+      @if (form.controls.bio.errors?.['server']) {
+        <span class="field-error">{{ form.controls.bio.errors?.['server'] }}</span>
+      }
+
+      <div class="form-actions">
+        <button type="submit" class="btn-primary" [disabled]="saving()">
+          {{ saving() ? 'Saving...' : 'Save' }}
+        </button>
+        <button type="button" class="btn-secondary" (click)="cancelEdit()">
+          Cancel
+        </button>
+      </div>
+    </form>
+  }
+
+  @if (loading()) {
+    <div class="status" aria-live="polite">Loading...</div>
+  }
+
+  @if (data(); as result) {
+    @if (result.items.length === 0) {
+      <div class="status empty">
+        <p>No authors found.</p>
+        @if (search()) {
+          <button type="button" class="btn-link" (click)="onSearch('')">Clear search</button>
+        }
+      </div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Bio</th>
+            <th class="actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (author of result.items; track author.id) {
+            <tr>
+              <td>{{ author.name }}</td>
+              <td>{{ author.bio || '—' }}</td>
+              <td class="actions">
+                <button type="button" class="btn-link" (click)="startEdit(author)">Edit</button>
+                <button type="button" class="btn-link danger" (click)="deleteAuthor(author)">Delete</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (result.totalCount > pageSize) {
+        <app-pagination
+          [page]="result.page"
+          [pageSize]="result.pageSize"
+          [totalCount]="result.totalCount"
+          (pageChange)="onPageChange($event)"
+        />
+      }
+    }
+  }
+</div>

@@ -31,7 +31,7 @@ public static class CreateGenre
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesValidationProblem();
 
-    private static async Task<CreatedAtRoute<GenreResponse>> Handle(
+    internal static async Task<CreatedAtRoute<GenreResponse>> Handle(
         CreateGenreRequest request,
         LibraryDbContext db,
         CancellationToken cancellationToken)

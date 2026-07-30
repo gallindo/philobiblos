@@ -1,0 +1,175 @@
+<div class="catalog">
+  <div class="catalog-header">
+    <h2>Books</h2>
+    <button type="button" class="btn-primary" (click)="startCreate()">
+      + New book
+    </button>
+  </div>
+
+  @if (message()) {
+    <div class="banner success" role="status">{{ message() }}</div>
+  }
+
+  <div class="toolbar">
+    <input
+      type="search"
+      placeholder="Search titles..."
+      [value]="search()"
+      (input)="onSearch($any($event).target.value)"
+    />
+    <select [value]="authorFilter()" (change)="authorFilter.set($any($event).target.value); onFilterChange()">
+      <option value="">All authors</option>
+      @for (author of authors(); track author.id) {
+        <option [value]="author.id">{{ author.name }}</option>
+      }
+    </select>
+    <select [value]="genreFilter()" (change)="genreFilter.set($any($event).target.value); onFilterChange()">
+      <option value="">All genres</option>
+      @for (genre of genres(); track genre.id) {
+        <option [value]="genre.id">{{ genre.name }}</option>
+      }
+    </select>
+  </div>
+
+  @if (isEditing()) {
+    <form class="editor" [formGroup]="form" (ngSubmit)="save()">
+      <h3>{{ editing() ? 'Edit book' : 'New book' }}</h3>
+      <input type="hidden" formControlName="id" />
+
+      <label for="book-title">Title</label>
+      <input
+        id="book-title"
+        type="text"
+        formControlName="title"
+        [class.invalid]="form.controls.title.invalid && form.controls.title.touched"
+      />
+      @if (form.controls.title.errors?.['server']) {
+        <span class="field-error">{{ form.controls.title.errors?.['server'] }}</span>
+      }
+      @if (form.controls.title.invalid && form.controls.title.touched && !form.controls.title.errors?.['server']) {
+        <span class="field-error">Title is required.</span>
+      }
+
+      <label for="book-author">Author</label>
+      <select
+        id="book-author"
+        formControlName="authorId"
+        [class.invalid]="form.controls.authorId.invalid && form.controls.authorId.touched"
+      >
+        <option value="" disabled>Select an author</option>
+        @for (author of authors(); track author.id) {
+          <option [value]="author.id">{{ author.name }}</option>
+        }
+      </select>
+      @if (form.controls.authorId.errors?.['server']) {
+        <span class="field-error">{{ form.controls.authorId.errors?.['server'] }}</span>
+      }
+      @if (form.controls.authorId.invalid && form.controls.authorId.touched && !form.controls.authorId.errors?.['server']) {
+        <span class="field-error">Author is required.</span>
+      }
+
+      <label for="book-genre">Genre</label>
+      <select
+        id="book-genre"
+        formControlName="genreId"
+        [class.invalid]="form.controls.genreId.invalid && form.controls.genreId.touched"
+      >
+        <option value="" disabled>Select a genre</option>
+        @for (genre of genres(); track genre.id) {
+          <option [value]="genre.id">{{ genre.name }}</option>
+        }
+      </select>
+      @if (form.controls.genreId.errors?.['server']) {
+        <span class="field-error">{{ form.controls.genreId.errors?.['server'] }}</span>
+      }
+      @if (form.controls.genreId.invalid && form.controls.genreId.touched && !form.controls.genreId.errors?.['server']) {
+        <span class="field-error">Genre is required.</span>
+      }
+
+      <label for="book-isbn">ISBN</label>
+      <input
+        id="book-isbn"
+        type="text"
+        formControlName="isbn"
+        [class.invalid]="form.controls.isbn.invalid && form.controls.isbn.touched"
+      />
+      @if (form.controls.isbn.errors?.['server']) {
+        <span class="field-error">{{ form.controls.isbn.errors?.['server'] }}</span>
+      }
+
+      <label for="book-year">Published year</label>
+      <input
+        id="book-year"
+        type="number"
+        formControlName="publishedYear"
+        [class.invalid]="form.controls.publishedYear.invalid && form.controls.publishedYear.touched"
+      />
+      @if (form.controls.publishedYear.errors?.['server']) {
+        <span class="field-error">{{ form.controls.publishedYear.errors?.['server'] }}</span>
+      }
+
+      <div class="form-actions">
+        <button type="submit" class="btn-primary" [disabled]="saving()">
+          {{ saving() ? 'Saving...' : 'Save' }}
+        </button>
+        <button type="button" class="btn-secondary" (click)="cancelEdit()">
+          Cancel
+        </button>
+      </div>
+    </form>
+  }
+
+  @if (loading()) {
+    <div class="status" aria-live="polite">Loading...</div>
+  }
+
+  @if (data(); as result) {
+    @if (result.items.length === 0) {
+      <div class="status empty">
+        <p>No books found.</p>
+        @if (search() || authorFilter() || genreFilter()) {
+          <button type="button" class="btn-link" (click)="search.set(''); authorFilter.set(''); genreFilter.set(''); onFilterChange()">
+            Clear filters
+          </button>
+        }
+      </div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Genre</th>
+            <th>ISBN</th>
+            <th>Year</th>
+            <th class="actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (book of result.items; track book.id) {
+            <tr>
+              <td>{{ book.title }}</td>
+              <td>{{ book.author.name }}</td>
+              <td>{{ book.genre.name }}</td>
+              <td>{{ book.isbn || '—' }}</td>
+              <td>{{ book.publishedYear ?? '—' }}</td>
+              <td class="actions">
+                <button type="button" class="btn-link" (click)="startEdit(book)">Edit</button>
+                <button type="button" class="btn-link danger" (click)="deleteBook(book)">Delete</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (result.totalCount > pageSize) {
+        <app-pagination
+          [page]="result.page"
+          [pageSize]="result.pageSize"
+          [totalCount]="result.totalCount"
+          (pageChange)="onPageChange($event)"
+        />
+      }
+    }
+  }
+</div>

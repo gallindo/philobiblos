@@ -1,0 +1,95 @@
+<div class="catalog">
+  <div class="catalog-header">
+    <h2>Genres</h2>
+    <button type="button" class="btn-primary" (click)="startCreate()">
+      + New genre
+    </button>
+  </div>
+
+  @if (message()) {
+    <div class="banner success" role="status">{{ message() }}</div>
+  }
+
+  <div class="toolbar">
+    <input
+      type="search"
+      placeholder="Search genres..."
+      [value]="search()"
+      (input)="onSearch($any($event).target.value)"
+    />
+  </div>
+
+  @if (isEditing()) {
+    <form class="editor" [formGroup]="form" (ngSubmit)="save()">
+      <h3>{{ editing() ? 'Edit genre' : 'New genre' }}</h3>
+      <input type="hidden" formControlName="id" />
+
+      <label for="genre-name">Name</label>
+      <input
+        id="genre-name"
+        type="text"
+        formControlName="name"
+        [class.invalid]="form.controls.name.invalid && form.controls.name.touched"
+      />
+      @if (form.controls.name.errors?.['server']) {
+        <span class="field-error">{{ form.controls.name.errors?.['server'] }}</span>
+      }
+      @if (form.controls.name.invalid && form.controls.name.touched && !form.controls.name.errors?.['server']) {
+        <span class="field-error">Name is required.</span>
+      }
+
+      <div class="form-actions">
+        <button type="submit" class="btn-primary" [disabled]="saving()">
+          {{ saving() ? 'Saving...' : 'Save' }}
+        </button>
+        <button type="button" class="btn-secondary" (click)="cancelEdit()">
+          Cancel
+        </button>
+      </div>
+    </form>
+  }
+
+  @if (loading()) {
+    <div class="status" aria-live="polite">Loading...</div>
+  }
+
+  @if (data(); as result) {
+    @if (result.items.length === 0) {
+      <div class="status empty">
+        <p>No genres found.</p>
+        @if (search()) {
+          <button type="button" class="btn-link" (click)="onSearch('')">Clear search</button>
+        }
+      </div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th class="actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (genre of result.items; track genre.id) {
+            <tr>
+              <td>{{ genre.name }}</td>
+              <td class="actions">
+                <button type="button" class="btn-link" (click)="startEdit(genre)">Edit</button>
+                <button type="button" class="btn-link danger" (click)="deleteGenre(genre)">Delete</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (result.totalCount > pageSize) {
+        <app-pagination
+          [page]="result.page"
+          [pageSize]="result.pageSize"
+          [totalCount]="result.totalCount"
+          (pageChange)="onPageChange($event)"
+        />
+      }
+    }
+  }
+</div>

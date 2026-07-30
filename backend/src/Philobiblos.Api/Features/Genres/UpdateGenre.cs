@@ -31,7 +31,7 @@ public static class UpdateGenre
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesValidationProblem();
 
-    private static async Task<Ok<GenreResponse>> Handle(
+    internal static async Task<Ok<GenreResponse>> Handle(
         Guid id,
         UpdateGenreRequest request,
         LibraryDbContext db,

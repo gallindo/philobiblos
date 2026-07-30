@@ -13,7 +13,7 @@ public static class DeleteGenre
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
-    private static async Task<NoContent> Handle(
+    internal static async Task<NoContent> Handle(
         Guid id,
         LibraryDbContext db,
         CancellationToken cancellationToken)

@@ -1,0 +1,29 @@
+<div class="app">
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-icon">📚</span>
+      <h1>{{ title }}</h1>
+    </div>
+    <nav class="main-nav" aria-label="Main sections">
+      @for (section of sections; track section.path) {
+        <a
+          [routerLink]="section.path"
+          routerLinkActive="active"
+        >
+          {{ section.label }}
+        </a>
+      }
+    </nav>
+  </header>
+
+  @if (errorService.messageSignal()) {
+    <div class="global-banner" role="alert">
+      <span>{{ errorService.messageSignal() }}</span>
+      <button type="button" (click)="errorService.clear()" aria-label="Dismiss">×</button>
+    </div>
+  }
+
+  <main class="content">
+    <router-outlet />
+  </main>
+</div>

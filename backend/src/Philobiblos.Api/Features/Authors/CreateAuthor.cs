@@ -35,7 +35,7 @@ public static class CreateAuthor
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesValidationProblem();
 
-    private static async Task<CreatedAtRoute<AuthorResponse>> Handle(
+    internal static async Task<CreatedAtRoute<AuthorResponse>> Handle(
         CreateAuthorRequest request,
         LibraryDbContext db,
         CancellationToken cancellationToken)
