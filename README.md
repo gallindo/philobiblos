@@ -62,26 +62,43 @@ npm run start
 
 ## Architecture
 
-The backend uses **Vertical Slice Architecture**: each feature is a self-contained file (route, DTOs, validator, handler) rather than a layered controller→service→repository stack. Cross-cutting concerns live in `Infrastructure/`.
+The backend uses **Clean Architecture** with an explicit repository pattern:
+
+- **`Domain`** — entities, domain exceptions, repository interfaces, and shared paging primitives. No framework dependencies.
+- **`Application`** — commands, queries, handlers, DTOs, validators, result types, and handler abstractions. Depends only on `Domain`.
+- **`Infrastructure`** — EF Core, PostgreSQL migrations, repository implementations, exception middleware, and validation filter. Depends on `Domain` and `Application`.
+- **`Api`** — thin minimal-API host that maps endpoints, registers DI, and delegates to application handlers.
 
 The frontend uses **feature folders** plus a thin `core/` layer for HTTP and error handling. Component state uses Angular signals; HTTP streams are mapped into signals at the component boundary.
 
 ## Backend organization
 
 ```
-backend/src/Philobiblos.Api/
-├── Features/
-│   ├── Genres/       CreateGenre.cs, ListGenres.cs, GetGenre.cs, UpdateGenre.cs, DeleteGenre.cs
-│   ├── Authors/      (same shape)
-│   └── Books/        (same shape)
-├── Domain/           Genre.cs, Author.cs, Book.cs, IEntity.cs
-├── Data/             LibraryDbContext.cs, configurations, migrations
-└── Infrastructure/   ExceptionHandlingMiddleware.cs, ValidationFilter.cs, Paging.cs, exceptions
+backend/src/
+├── Philobiblos.Domain/
+│   ├── Entities/          Author.cs, Book.cs, Genre.cs
+│   ├── Exceptions/        NotFoundException.cs, ConflictException.cs
+│   ├── Repositories/      IRepository.cs (with IAuthorRepository, IBookRepository, IGenreRepository, IUnitOfWork)
+│   └── Common/            PagedList.cs
+├── Philobiblos.Application/
+│   ├── Authors/           Commands, Queries, DTOs (validators live inside command files)
+│   ├── Books/
+│   ├── Genres/
+│   └── Common/            Result.cs, Unit.cs, PagedQuery.cs, IHandler.cs (ICommandHandler / IQueryHandler)
+├── Philobiblos.Infrastructure/
+│   ├── Data/              LibraryDbContext.cs, configurations, migrations
+│   ├── Repositories/      Repository.cs, AuthorRepository.cs, BookRepository.cs, GenreRepository.cs
+│   ├── Middleware/        ExceptionHandlingMiddleware.cs
+│   ├── Filters/           ValidationFilter.cs
+│   └── Paging/            PagingExtensions.cs
+└── Philobiblos.Api/
+    ├── Endpoints/         AuthorEndpoints.cs, BookEndpoints.cs, GenreEndpoints.cs
+    └── Program.cs         DI registration and middleware pipeline
 ```
 
-- **One file per use case.** A slice owns everything that changes together.
-- **No MediatR.** Slices are invoked directly from minimal-API endpoint registrations.
-- **No repository pattern.** Handlers use `LibraryDbContext` directly; the coupling is visible per slice and covered by integration tests.
+- **No MediatR.** Handlers are invoked directly through a simple `ICommandHandler<TCommand,TResult>` / `IQueryHandler<TQuery,TResult>` abstraction.
+- **Repository pattern.** EF Core and raw SQL are isolated in the infrastructure layer; the application layer depends on interfaces defined in the domain.
+- **Preserved HTTP contract.** Routes, status codes, and ProblemDetails shapes remain unchanged from the previous vertical-slice implementation.
 
 ## Frontend organization
 
@@ -118,10 +135,10 @@ PostgreSQL 16 is used via the Npgsql EF Core provider.
 
 Key decisions are captured in ADRs under `docs/adr/`:
 
-1. **Vertical slices over Clean Architecture layers** — less ceremony for a small CRUD domain; named evolution path if aggregates/domain events appear.
-2. **PostgreSQL over SQL Server/MySQL** — fast container startup, first-class Npgsql provider, no licensing.
-3. **No repository pattern / no MediatR** — EF Core directly in handlers, explicit middleware for cross-cutting concerns.
-4. **ProblemDetails + global middleware + FluentValidation filter** — uniform error contract, no stack-trace leakage, correlation IDs.
+1. **Clean Architecture with repository pattern** — explicit layers isolate domain logic from EF Core, making the code easier to unit-test and evolve as the domain grows. See [ADR 0005](docs/adr/0005-clean-architecture-repository-pattern.md).
+2. **PostgreSQL over SQL Server/MySQL** — fast container startup, first-class Npgsql provider, no licensing. See [ADR 0002](docs/adr/0002-postgresql.md).
+3. **No MediatR / simple handler abstractions** — `ICommandHandler` and `IQueryHandler` provide just enough indirection without the ceremony of a full message bus. Covered by [ADR 0005](docs/adr/0005-clean-architecture-repository-pattern.md).
+4. **ProblemDetails + global middleware + FluentValidation filter** — uniform error contract, no stack-trace leakage, correlation IDs. See [ADR 0004](docs/adr/0004-error-contract.md).
 5. **Authentication deferred** — JWT auth and RBAC are documented future work; a half-baked implementation under time pressure would be a liability.
 
 ## Testing strategy

@@ -1,5 +1,7 @@
 # ADR 0003: EF Core directly in handlers, no repository or unit-of-work
 
+> **Status:** Superseded by [ADR 0005: Clean Architecture with repository pattern](0005-clean-architecture-repository-pattern.md).
+
 ## Context
 
 A common .NET pattern wraps `DbContext` behind `IRepository<T>` and `IUnitOfWork`. For a small CRUD domain, those interfaces mostly forward calls to `DbContext` and add files without adding testability.

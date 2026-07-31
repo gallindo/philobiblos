@@ -20,6 +20,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Philobiblos.Api\Philobiblos.Api.csproj" />
+    <ProjectReference Include="..\..\src\Philobiblos.Application\Philobiblos.Application.csproj" />
+    <ProjectReference Include="..\..\src\Philobiblos.Infrastructure\Philobiblos.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

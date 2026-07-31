@@ -1,7 +1,7 @@
 using FluentAssertions;
-using Philobiblos.Api.Features.Authors;
-using Philobiblos.Api.Features.Books;
-using Philobiblos.Api.Features.Genres;
+using Philobiblos.Application.Authors.Queries;
+using Philobiblos.Application.Books.Queries;
+using Philobiblos.Application.Genres.Queries;
 
 namespace Philobiblos.UnitTests.Validators;
 

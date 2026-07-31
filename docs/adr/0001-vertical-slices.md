@@ -1,5 +1,7 @@
 # ADR 0001: Vertical Slice Architecture over Clean Architecture layers
 
+> **Status:** Superseded by [ADR 0005: Clean Architecture with repository pattern](0005-clean-architecture-repository-pattern.md).
+
 ## Context
 
 Philobiblos has three entities (`Genre`, `Author`, `Book`) and mostly pure-CRUD use cases. A classic Clean Architecture split would create near-empty `Domain`/`Application` projects and force every new field to be edited in four or five places (entity, DTO, validator, handler, repository interface).

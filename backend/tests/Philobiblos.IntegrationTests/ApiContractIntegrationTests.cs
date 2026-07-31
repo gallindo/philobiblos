@@ -2,10 +2,10 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
-using Philobiblos.Api.Features.Authors;
-using Philobiblos.Api.Features.Books;
-using Philobiblos.Api.Features.Genres;
-using Philobiblos.Api.Infrastructure;
+using Philobiblos.Application.Authors.Dtos;
+using Philobiblos.Application.Books.Dtos;
+using Philobiblos.Application.Genres.Dtos;
+using Philobiblos.Application.Common;
 
 namespace Philobiblos.IntegrationTests;
 

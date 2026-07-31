@@ -2,8 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
-using Philobiblos.Api.Features.Books;
-using Philobiblos.Api.Infrastructure;
+using Philobiblos.Application.Books.Dtos;
+using Philobiblos.Application.Common;
 
 namespace Philobiblos.IntegrationTests;
 
@@ -480,7 +480,7 @@ public sealed class BookIntegrationTests : IAsyncLifetime
     {
         var response = await _client.PostAsJsonAsync("/api/authors", new { name, bio = (string?)null }, JsonOptions);
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var author = await response.Content.ReadFromJsonAsync<Philobiblos.Api.Features.Authors.AuthorResponse>(JsonOptions);
+        var author = await response.Content.ReadFromJsonAsync<Philobiblos.Application.Authors.Dtos.AuthorResponse>(JsonOptions);
         return author!.Id;
     }
 
@@ -488,7 +488,7 @@ public sealed class BookIntegrationTests : IAsyncLifetime
     {
         var response = await _client.PostAsJsonAsync("/api/genres", new { name }, JsonOptions);
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var genre = await response.Content.ReadFromJsonAsync<Philobiblos.Api.Features.Genres.GenreResponse>(JsonOptions);
+        var genre = await response.Content.ReadFromJsonAsync<Philobiblos.Application.Genres.Dtos.GenreResponse>(JsonOptions);
         return genre!.Id;
     }
 

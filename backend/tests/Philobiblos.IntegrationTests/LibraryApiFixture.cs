@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Philobiblos.Api.Data;
+using Philobiblos.Infrastructure.Data;
 using Testcontainers.PostgreSql;
 
 namespace Philobiblos.IntegrationTests;
