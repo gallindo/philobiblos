@@ -7,7 +7,7 @@ A small but production-aware library management system for a Senior Software Eng
 - **Backend:** .NET 10 minimal-API application (`backend/src/Philobiblos.Api/`)
 - **Frontend:** Angular 19 standalone SPA (`frontend/`)
 - **Database:** PostgreSQL 16
-- **Observability:** Serilog structured logging with correlation IDs
+- **Observability:** Serilog structured logging with correlation IDs, OpenTelemetry traces, Prometheus metrics, and health checks
 - **Run orchestration:** Docker Compose (`docker-compose.yml`)
 
 The repository is intentionally small (three entities, CRUD use cases) so the focus is on justified architecture, a coherent API contract, and a clean local run experience.
@@ -34,12 +34,30 @@ Services come up as:
 | PostgreSQL | `localhost:5432` | Database `philobiblos` |
 | API | `http://localhost:8080` | Migrations auto-apply in Development |
 | Web | `http://localhost:4200` | Angular SPA served by nginx |
+| OpenTelemetry Collector | `localhost:4317` (gRPC), `localhost:4318` (HTTP) | Receives OTLP traces and metrics from the API |
+| Prometheus | `http://localhost:9090` | Scrapes metrics from the collector |
+| Jaeger | `http://localhost:16686` | Trace search and visualization UI |
 
 Tear down and remove the volume:
 
 ```bash
 docker compose down -v
 ```
+
+### Observability
+
+The API exposes two anonymous, production-friendly endpoints:
+
+- `GET /health` — database health check (no authentication required).
+- `GET /metrics` — Prometheus exposition format with HTTP and runtime metrics.
+
+When running via Docker Compose, the API sends traces and metrics via OTLP to the OpenTelemetry Collector:
+
+- `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317`
+- Traces are forwarded to **Jaeger** (`http://localhost:16686`).
+- Metrics are re-exposed by the collector and scraped by **Prometheus** (`http://localhost:9090`).
+
+For `dotnet run` without Docker, the app still serves `/health` and `/metrics`, but no collector, Prometheus, or Jaeger services are started.
 
 ### Backend only
 
@@ -137,6 +155,7 @@ backend/src/
 │   ├── Data/              LibraryDbContext.cs, configurations, migrations
 │   ├── Repositories/      Repository.cs, AuthorRepository.cs, BookRepository.cs, GenreRepository.cs, UserRepository.cs
 │   ├── Security/          AuthOptions.cs, HttpContextCurrentUser.cs
+│   ├── Observability/     OpenTelemetry + health-check registration
 │   ├── Middleware/        ExceptionHandlingMiddleware.cs
 │   ├── Filters/           ValidationFilter.cs
 │   └── Paging/            PagingExtensions.cs
@@ -192,6 +211,7 @@ Key decisions are captured in ADRs under `docs/adr/`:
 3. **No MediatR / simple handler abstractions** — `ICommandHandler` and `IQueryHandler` provide just enough indirection without the ceremony of a full message bus. Covered by [ADR 0005](docs/adr/0005-clean-architecture-repository-pattern.md).
 4. **ProblemDetails + global middleware + FluentValidation filter** — uniform error contract, no stack-trace leakage, correlation IDs. See [ADR 0004](docs/adr/0004-error-contract.md).
 5. **OAuth 2.0 with Google plus cookie sessions** — delegates credential management to Google, avoids storing passwords, and uses policy-based RBAC. See [ADR 0006](docs/adr/0006-oauth-authentication-with-google.md).
+6. **OpenTelemetry observability** — traces, runtime metrics, and health checks are collected through the OpenTelemetry SDK and exported via OTLP to a local collector that feeds Jaeger and Prometheus. See [ADR 0007](docs/adr/0007-opentelemetry-observability.md).
 
 ## Testing strategy
 
@@ -290,7 +310,7 @@ Environment variable: `Auth__Test__Enabled=true`.
 - No audit logging or audit columns.
 - No soft deletes; records are physically removed.
 - Role claims are captured at sign-in; a role change requires signing out and back in to refresh.
-- No OpenTelemetry exporters, CI pipeline, or deployment target beyond Docker Compose.
+- No CI pipeline or deployment target beyond Docker Compose.
 
 ## Improvements with more time
 

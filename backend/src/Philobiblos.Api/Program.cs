@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Philobiblos.Api.Endpoints;
 using Philobiblos.Application;
@@ -13,6 +14,7 @@ builder.Host.UseSerilog((context, configuration) => configuration
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddObservability(builder.Configuration, builder.Environment);
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -31,6 +33,8 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseObservability();
+
 app.UseSerilogRequestLogging(options =>
 {
     options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
@@ -41,6 +45,8 @@ app.MapAuthEndpoints();
 app.MapGenreEndpoints();
 app.MapAuthorEndpoints();
 app.MapBookEndpoints();
+
+app.MapHealthChecks("/health").AllowAnonymous();
 
 app.Run();
 

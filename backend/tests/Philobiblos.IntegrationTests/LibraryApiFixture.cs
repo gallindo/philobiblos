@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -87,6 +89,12 @@ public sealed class TestEndpointStartupFilter : IStartupFilter
                 endpoints.MapGet("/api/test/throw", () =>
                 {
                     throw new InvalidOperationException("Intentional test exception.");
+                });
+
+                endpoints.MapGet("/api/test/activity", () =>
+                {
+                    var correlationId = Activity.Current?.GetTagItem("correlation.id")?.ToString();
+                    return Results.Ok(new { correlationId });
                 });
             });
         };
