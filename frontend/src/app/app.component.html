@@ -16,6 +16,14 @@
         </a>
       }
     </nav>
+    <div class="auth-nav" aria-label="Authentication" data-testid="auth-nav">
+      @if (authService.isAuthenticated()) {
+        <span data-testid="user-display">{{ authService.user()?.displayName ?? authService.user()?.email }}</span>
+        <button type="button" (click)="authService.logout()" data-testid="logout-button">Logout</button>
+      } @else {
+        <a routerLink="/login" data-testid="login-link">Login</a>
+      }
+    </div>
   </header>
 
   @if (errorService.messageSignal()) {

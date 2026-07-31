@@ -1,4 +1,4 @@
-import { APIRequestContext } from '@playwright/test';
+import { APIRequestContext, Page } from '@playwright/test';
 
 export interface Genre {
   id: string;
@@ -24,7 +24,24 @@ export function uniqueName(prefix: string): string {
   return `${prefix} E2E ${Date.now()} ${Math.random().toString(36).slice(2, 7)}`;
 }
 
+export async function authenticateApi(request: APIRequestContext): Promise<void> {
+  const response = await request.post('/api/auth/test-login');
+  if (!response.ok()) {
+    const body = await response.text();
+    throw new Error(`Failed to authenticate API: ${response.status()} ${body}`);
+  }
+}
+
+export async function authenticatePage(page: Page): Promise<void> {
+  const response = await page.request.post('/api/auth/test-login');
+  if (!response.ok()) {
+    const body = await response.text();
+    throw new Error(`Failed to authenticate page: ${response.status()} ${body}`);
+  }
+}
+
 export async function createGenreViaApi(request: APIRequestContext, name: string): Promise<Genre> {
+  await authenticateApi(request);
   const response = await request.post('/api/genres', { data: { name } });
   if (!response.ok()) {
     const body = await response.text();
@@ -34,6 +51,7 @@ export async function createGenreViaApi(request: APIRequestContext, name: string
 }
 
 export async function createAuthorViaApi(request: APIRequestContext, name: string, bio?: string): Promise<Author> {
+  await authenticateApi(request);
   const response = await request.post('/api/authors', { data: { name, bio } });
   if (!response.ok()) {
     const body = await response.text();
@@ -52,6 +70,7 @@ export async function createBookViaApi(
     publishedYear?: number;
   }
 ): Promise<Book> {
+  await authenticateApi(request);
   const response = await request.post('/api/books', { data: book });
   if (!response.ok()) {
     const body = await response.text();
@@ -61,14 +80,17 @@ export async function createBookViaApi(
 }
 
 export async function deleteGenreViaApi(request: APIRequestContext, id: string): Promise<void> {
+  await authenticateApi(request);
   await request.delete(`/api/genres/${id}`);
 }
 
 export async function deleteAuthorViaApi(request: APIRequestContext, id: string): Promise<void> {
+  await authenticateApi(request);
   await request.delete(`/api/authors/${id}`);
 }
 
 export async function deleteBookViaApi(request: APIRequestContext, id: string): Promise<void> {
+  await authenticateApi(request);
   await request.delete(`/api/books/${id}`);
 }
 

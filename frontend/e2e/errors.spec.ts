@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { cleanupTestData, uniqueName } from './helpers';
+import { authenticatePage, cleanupTestData, uniqueName } from './helpers';
 
 test.describe('AC-5.6 Error handling', () => {
-  test.beforeEach(async ({ request }) => {
+  test.beforeEach(async ({ request, page }) => {
     await cleanupTestData(request);
+    await authenticatePage(page);
   });
 
   test('shows user-readable message when the API is unreachable', async ({ page }) => {

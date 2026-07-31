@@ -1,9 +1,11 @@
 <div class="catalog" data-testid="genres-section">
   <div class="catalog-header">
     <h2>Genres</h2>
-    <button type="button" class="btn-primary" (click)="startCreate()" data-testid="new-genre-button">
-      + New genre
-    </button>
+    @if (isEditor()) {
+      <button type="button" class="btn-primary" (click)="startCreate()" data-testid="new-genre-button">
+        + New genre
+      </button>
+    }
   </div>
 
   @if (message()) {
@@ -80,13 +82,15 @@
             <tr data-testid="genre-row">
               <td data-testid="genre-name">{{ genre.name }}</td>
               <td class="actions">
-                @if (confirmingDelete() === genre) {
-                  <span class="confirm-text">Delete?</span>
-                  <button type="button" class="btn-link danger" (click)="confirmDelete(genre)" data-testid="genre-delete-confirm">Delete</button>
-                  <button type="button" class="btn-link" (click)="cancelDelete()" data-testid="genre-delete-cancel">Cancel</button>
-                } @else {
-                  <button type="button" class="btn-link" (click)="startEdit(genre)" data-testid="genre-edit">Edit</button>
-                  <button type="button" class="btn-link danger" (click)="requestDelete(genre)" data-testid="genre-delete">Delete</button>
+                @if (isEditor()) {
+                  @if (confirmingDelete() === genre) {
+                    <span class="confirm-text">Delete?</span>
+                    <button type="button" class="btn-link danger" (click)="confirmDelete(genre)" data-testid="genre-delete-confirm">Delete</button>
+                    <button type="button" class="btn-link" (click)="cancelDelete()" data-testid="genre-delete-cancel">Cancel</button>
+                  } @else {
+                    <button type="button" class="btn-link" (click)="startEdit(genre)" data-testid="genre-edit">Edit</button>
+                    <button type="button" class="btn-link danger" (click)="requestDelete(genre)" data-testid="genre-delete">Delete</button>
+                  }
                 }
               </td>
             </tr>

@@ -81,15 +81,15 @@ flowchart TB
 
     Browser -->|HTTP /api/*| Nginx["nginx (static + proxy)"]
 
-    subgraph Backend
+        subgraph Backend
         direction TB
         Api["Philobiblos.Api<br/>Minimal API host<br/>Endpoints + DI + middleware pipeline"]
 
         App["Philobiblos.Application<br/>Commands, Queries, Handlers<br/>DTOs, Validators, Result&lt;T&gt;<br/>ICommandHandler / IQueryHandler"]
 
-        Infra["Philobiblos.Infrastructure<br/>EF Core + PostgreSQL migrations<br/>Repository implementations<br/>ExceptionHandlingMiddleware + ValidationFilter"]
+        Infra["Philobiblos.Infrastructure<br/>EF Core + PostgreSQL migrations<br/>Repository implementations<br/>ExceptionHandlingMiddleware + ValidationFilter<br/>Cookie + Google OAuth auth"]
 
-        Domain["Philobiblos.Domain<br/>Entities: Author, Book, Genre<br/>Exceptions: NotFoundException, ConflictException<br/>IRepository&lt;T&gt;, IUnitOfWork, PagedList&lt;T&gt;"]
+        Domain["Philobiblos.Domain<br/>Entities: Author, Book, Genre, User<br/>Exceptions: NotFoundException, ConflictException<br/>IRepository&lt;T&gt;, IUnitOfWork, PagedList&lt;T&gt;"]
     end
 
     Nginx --> Api
@@ -123,9 +123,10 @@ Dependencies point inward:
 ```
 backend/src/
 ├── Philobiblos.Domain/
-│   ├── Entities/          Author.cs, Book.cs, Genre.cs
+│   ├── Entities/          Author.cs, Book.cs, Genre.cs, User.cs
 │   ├── Exceptions/        NotFoundException.cs, ConflictException.cs
-│   ├── Repositories/      IRepository.cs (with IAuthorRepository, IBookRepository, IGenreRepository, IUnitOfWork)
+│   ├── Repositories/      IRepository.cs (with IAuthorRepository, IBookRepository, IGenreRepository, IUserRepository, IUnitOfWork)
+│   ├── Security/          ICurrentUser.cs
 │   └── Common/            PagedList.cs
 ├── Philobiblos.Application/
 │   ├── Authors/           Commands, Queries, DTOs (validators live inside command files)
@@ -134,12 +135,13 @@ backend/src/
 │   └── Common/            Result.cs, Unit.cs, PagedQuery.cs, IHandler.cs (ICommandHandler / IQueryHandler)
 ├── Philobiblos.Infrastructure/
 │   ├── Data/              LibraryDbContext.cs, configurations, migrations
-│   ├── Repositories/      Repository.cs, AuthorRepository.cs, BookRepository.cs, GenreRepository.cs
+│   ├── Repositories/      Repository.cs, AuthorRepository.cs, BookRepository.cs, GenreRepository.cs, UserRepository.cs
+│   ├── Security/          AuthOptions.cs, HttpContextCurrentUser.cs
 │   ├── Middleware/        ExceptionHandlingMiddleware.cs
 │   ├── Filters/           ValidationFilter.cs
 │   └── Paging/            PagingExtensions.cs
 └── Philobiblos.Api/
-    ├── Endpoints/         AuthorEndpoints.cs, BookEndpoints.cs, GenreEndpoints.cs
+    ├── Endpoints/         AuthEndpoints.cs, AuthorEndpoints.cs, BookEndpoints.cs, GenreEndpoints.cs
     └── Program.cs         DI registration and middleware pipeline
 ```
 
@@ -153,10 +155,13 @@ backend/src/
 frontend/src/app/
 ├── core/
 │   ├── api.service.ts                Typed HTTP client for all entities
+│   ├── auth.service.ts               Current user signal, login/logout helpers
+│   ├── auth.interceptor.ts           Redirects to login on 401, shows banner on 403
 │   ├── problem-details.interceptor.ts Maps 400 field errors to forms, 409/404/500 to messages
 │   ├── error.service.ts              Reactive error banner state
-│   └── models.ts                     Shared DTOs and `PagedResult<T>`
+│   └── models.ts                     Shared DTOs, `PagedResult<T>`, and `User`
 ├── features/
+│   ├── login/          login.component
 │   ├── genres/         genre-list.component
 │   ├── authors/        author-list.component
 │   └── books/          book-list.component
@@ -186,7 +191,7 @@ Key decisions are captured in ADRs under `docs/adr/`:
 2. **PostgreSQL over SQL Server/MySQL** — fast container startup, first-class Npgsql provider, no licensing. See [ADR 0002](docs/adr/0002-postgresql.md).
 3. **No MediatR / simple handler abstractions** — `ICommandHandler` and `IQueryHandler` provide just enough indirection without the ceremony of a full message bus. Covered by [ADR 0005](docs/adr/0005-clean-architecture-repository-pattern.md).
 4. **ProblemDetails + global middleware + FluentValidation filter** — uniform error contract, no stack-trace leakage, correlation IDs. See [ADR 0004](docs/adr/0004-error-contract.md).
-5. **Authentication deferred** — JWT auth and RBAC are documented future work; a half-baked implementation under time pressure would be a liability.
+5. **OAuth 2.0 with Google plus cookie sessions** — delegates credential management to Google, avoids storing passwords, and uses policy-based RBAC. See [ADR 0006](docs/adr/0006-oauth-authentication-with-google.md).
 
 ## Testing strategy
 
@@ -217,16 +222,80 @@ cd frontend
 npm run test:e2e
 ```
 
+## Authentication
+
+The backend supports Google OAuth 2.0 when enabled. `Auth:Google:Enabled` is the switch: set it to `true` to enable the Google OAuth flow, or `false` to keep it disabled (no Google credentials required). The default `AuthenticationScheme` is `Google` and only needs to be changed if you register multiple OAuth providers.
+
+Configure these settings via `appsettings.json`, `appsettings.Development.json`, or environment variables:
+
+```json
+{
+  "Auth": {
+    "SeedAdminEmail": "admin@example.com",
+    "Google": {
+      "Enabled": true,
+      "AuthenticationScheme": "Google",
+      "ClientId": "<your-google-client-id>",
+      "ClientSecret": "<your-google-client-secret>"
+    },
+    "Cookie": {
+      "ExpireTimeSpan": "14.00:00:00",
+      "SlidingExpiration": true
+    }
+  }
+}
+```
+
+For environment variables, ASP.NET Core flattens the `:` hierarchy into double underscores (`__`). Examples:
+
+- `Auth__Google__Enabled=true`
+- `Auth__Google__ClientId=<your-google-client-id>`
+- `Auth__Google__ClientSecret=<your-google-client-secret>`
+- `Auth__SeedAdminEmail=admin@example.com`
+
+To enable real Google OAuth in Docker Compose, add the credentials under the `api` service:
+
+```yaml
+api:
+  environment:
+    Auth__Google__Enabled: "true"
+    Auth__Google__ClientId: "<your-google-client-id>"
+    Auth__Google__ClientSecret: "<your-google-client-secret>"
+    Auth__SeedAdminEmail: "admin@example.com"
+```
+
+### Local development and e2e tests without Google credentials
+
+Enable the test login endpoint for a deterministic, credential-free session:
+
+```json
+{
+  "Auth": {
+    "Test": {
+      "Enabled": true,
+      "Email": "test@example.com",
+      "DisplayName": "Test User",
+      "Roles": ["Editor"]
+    }
+  }
+}
+```
+
+Environment variable: `Auth__Test__Enabled=true`.
+
+`POST /api/auth/test-login` is only available in non-Production environments and issues an authenticated cookie for the configured test user. The default `docker-compose.yml` ships with this enabled for e2e tests.
+
 ## Known limitations
 
-- No authentication or authorization.
 - No audit logging or audit columns.
 - No soft deletes; records are physically removed.
+- Role claims are captured at sign-in; a role change requires signing out and back in to refresh.
 - No OpenTelemetry exporters, CI pipeline, or deployment target beyond Docker Compose.
 
 ## Improvements with more time
 
-- JWT bearer authentication with policy-based RBAC.
+- Additional OAuth providers (Microsoft, GitHub) behind a small external-identity abstraction.
+- Refresh role claims without forcing a full sign-out.
 - Audit columns (`CreatedAt`, `CreatedBy`, `UpdatedAt`, `UpdatedBy`).
 - Soft deletes and a recycle-bin workflow.
 - CI pipeline (build, test, container image publish).

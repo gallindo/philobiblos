@@ -82,6 +82,13 @@ export interface ApiError {
   nonFieldError: string | null;
 }
 
+export interface User {
+  id: string;
+  email: string;
+  displayName: string | null;
+  roles: string[];
+}
+
 export interface PagedListParams {
   [key: string]: string | number | boolean | undefined | null;
   page?: number;

@@ -21,6 +21,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Library: "Host=db;Port=5432;Database=philobiblos;Username=postgres;Password=postgres"
+      Auth__Google__Enabled: "false"
+      Auth__Test__Enabled: "true"
     ports:
       - "8080:8080"
     depends_on:

@@ -25,7 +25,8 @@ public static class GenreEndpoints
             .AddEndpointFilter<ValidationFilter<CreateGenreCommand>>()
             .WithName("CreateGenre")
             .ProducesProblem(StatusCodes.Status409Conflict)
-            .ProducesValidationProblem();
+            .ProducesValidationProblem()
+            .RequireAuthorization("Editor");
 
         genres.MapGet("/", async (
             [AsParameters] ListGenresQuery query,
@@ -60,7 +61,8 @@ public static class GenreEndpoints
             .WithName("UpdateGenre")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
-            .ProducesValidationProblem();
+            .ProducesValidationProblem()
+            .RequireAuthorization("Editor");
 
         genres.MapDelete("/{id}", async (
             Guid id,
@@ -72,7 +74,8 @@ public static class GenreEndpoints
         })
             .WithName("DeleteGenre")
             .ProducesProblem(StatusCodes.Status404NotFound)
-            .ProducesProblem(StatusCodes.Status409Conflict);
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .RequireAuthorization("Editor");
 
         return app;
     }

@@ -33,7 +33,8 @@ public static class BookEndpoints
             .AddEndpointFilter<ValidationFilter<CreateBookCommand>>()
             .WithName("CreateBook")
             .ProducesProblem(StatusCodes.Status409Conflict)
-            .ProducesValidationProblem();
+            .ProducesValidationProblem()
+            .RequireAuthorization("Editor");
 
         books.MapGet("/", async (
             [AsParameters] ListBooksQuery query,
@@ -77,7 +78,8 @@ public static class BookEndpoints
             .WithName("UpdateBook")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
-            .ProducesValidationProblem();
+            .ProducesValidationProblem()
+            .RequireAuthorization("Editor");
 
         books.MapDelete("/{id}", async (
             Guid id,
@@ -88,7 +90,8 @@ public static class BookEndpoints
             return TypedResults.NoContent();
         })
             .WithName("DeleteBook")
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireAuthorization("Editor");
 
         return app;
     }

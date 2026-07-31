@@ -25,7 +25,8 @@ public static class AuthorEndpoints
             .AddEndpointFilter<ValidationFilter<CreateAuthorCommand>>()
             .WithName("CreateAuthor")
             .ProducesProblem(StatusCodes.Status409Conflict)
-            .ProducesValidationProblem();
+            .ProducesValidationProblem()
+            .RequireAuthorization("Editor");
 
         authors.MapGet("/", async (
             [AsParameters] ListAuthorsQuery query,
@@ -60,7 +61,8 @@ public static class AuthorEndpoints
             .WithName("UpdateAuthor")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
-            .ProducesValidationProblem();
+            .ProducesValidationProblem()
+            .RequireAuthorization("Editor");
 
         authors.MapDelete("/{id}", async (
             Guid id,
@@ -72,7 +74,8 @@ public static class AuthorEndpoints
         })
             .WithName("DeleteAuthor")
             .ProducesProblem(StatusCodes.Status404NotFound)
-            .ProducesProblem(StatusCodes.Status409Conflict);
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .RequireAuthorization("Editor");
 
         return app;
     }

@@ -42,6 +42,8 @@ public sealed class LibraryApiFixture : IAsyncLifetime
             .WithWebHostBuilder(builder =>
             {
                 builder.UseSetting("ConnectionStrings:Library", _postgres.GetConnectionString());
+                builder.UseSetting("Auth:Google:Enabled", "false");
+                builder.UseSetting("Auth:Test:Enabled", "true");
 
                 builder.ConfigureServices(services =>
                 {
@@ -62,7 +64,7 @@ public sealed class LibraryApiFixture : IAsyncLifetime
         // Truncate all tables together with CASCADE so the RESTRICT foreign keys are bypassed
         // and every test class starts from a clean, migrated database.
         await db.Database.ExecuteSqlRawAsync("""
-            TRUNCATE TABLE "Books", "Authors", "Genres" CASCADE;
+            TRUNCATE TABLE "Books", "Authors", "Genres", "Users" CASCADE;
             """);
     }
 

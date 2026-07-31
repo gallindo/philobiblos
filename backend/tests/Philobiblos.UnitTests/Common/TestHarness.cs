@@ -11,6 +11,7 @@ public sealed class TestHarness : IDisposable, IAsyncDisposable
     public IAuthorRepository Authors { get; }
     public IGenreRepository Genres { get; }
     public IBookRepository Books { get; }
+    public IUserRepository Users { get; }
     public IUnitOfWork UnitOfWork { get; }
 
     public TestHarness()
@@ -23,6 +24,7 @@ public sealed class TestHarness : IDisposable, IAsyncDisposable
         Authors = new AuthorRepository(Context);
         Genres = new GenreRepository(Context);
         Books = new BookRepository(Context);
+        Users = new UserRepository(Context);
         UnitOfWork = Context;
     }
 

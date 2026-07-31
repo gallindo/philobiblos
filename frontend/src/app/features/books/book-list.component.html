@@ -1,9 +1,11 @@
 <div class="catalog" data-testid="books-section">
   <div class="catalog-header">
     <h2>Books</h2>
-    <button type="button" class="btn-primary" (click)="startCreate()" data-testid="new-book-button">
-      + New book
-    </button>
+    @if (isEditor()) {
+      <button type="button" class="btn-primary" (click)="startCreate()" data-testid="new-book-button">
+        + New book
+      </button>
+    }
   </div>
 
   @if (message()) {
@@ -180,13 +182,15 @@
               <td data-testid="book-isbn" class="numeric">{{ book.isbn || '—' }}</td>
               <td data-testid="book-year" class="numeric">{{ book.publishedYear ?? '—' }}</td>
               <td class="actions">
-                @if (confirmingDelete() === book) {
-                  <span class="confirm-text">Delete?</span>
-                  <button type="button" class="btn-link danger" (click)="confirmDelete(book)" data-testid="book-delete-confirm">Delete</button>
-                  <button type="button" class="btn-link" (click)="cancelDelete()" data-testid="book-delete-cancel">Cancel</button>
-                } @else {
-                  <button type="button" class="btn-link" (click)="startEdit(book)" data-testid="book-edit">Edit</button>
-                  <button type="button" class="btn-link danger" (click)="requestDelete(book)" data-testid="book-delete">Delete</button>
+                @if (isEditor()) {
+                  @if (confirmingDelete() === book) {
+                    <span class="confirm-text">Delete?</span>
+                    <button type="button" class="btn-link danger" (click)="confirmDelete(book)" data-testid="book-delete-confirm">Delete</button>
+                    <button type="button" class="btn-link" (click)="cancelDelete()" data-testid="book-delete-cancel">Cancel</button>
+                  } @else {
+                    <button type="button" class="btn-link" (click)="startEdit(book)" data-testid="book-edit">Edit</button>
+                    <button type="button" class="btn-link danger" (click)="requestDelete(book)" data-testid="book-delete">Delete</button>
+                  }
                 }
               </td>
             </tr>

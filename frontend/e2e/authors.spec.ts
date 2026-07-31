@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
+  authenticatePage,
   cleanupTestData,
   createGenreViaApi,
   createAuthorViaApi,
@@ -8,8 +9,9 @@ import {
 } from './helpers';
 
 test.describe('AC-5.2 / AC-5.3 / AC-5.4 Authors', () => {
-  test.beforeEach(async ({ request }) => {
+  test.beforeEach(async ({ request, page }) => {
     await cleanupTestData(request);
+    await authenticatePage(page);
   });
 
   test('shows loading indicator while fetching and empty state when no records', async ({ page }) => {

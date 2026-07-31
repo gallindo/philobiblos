@@ -56,6 +56,13 @@ public interface IBookRepository : IRepository<Book>
         CancellationToken cancellationToken = default);
 }
 
+public interface IUserRepository : IRepository<User>
+{
+    Task<User?> GetByProviderAsync(string provider, string providerSubject, CancellationToken cancellationToken = default);
+
+    Task<bool> AnyAsync(CancellationToken cancellationToken = default);
+}
+
 public interface IUnitOfWork
 {
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

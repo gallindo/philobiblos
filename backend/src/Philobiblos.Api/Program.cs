@@ -28,12 +28,16 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.UseSerilogRequestLogging(options =>
 {
     options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
         diagnosticContext.Set("CorrelationId", httpContext.TraceIdentifier);
 });
 
+app.MapAuthEndpoints();
 app.MapGenreEndpoints();
 app.MapAuthorEndpoints();
 app.MapBookEndpoints();

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Philobiblos.Application.Authors.Dtos;
 using Philobiblos.Application.Common;
 
@@ -18,10 +19,20 @@ public sealed class AuthorIntegrationTests : IAsyncLifetime
     public AuthorIntegrationTests(LibraryApiFixture fixture)
     {
         _fixture = fixture;
-        _client = fixture.Factory.CreateClient();
+        _client = fixture.Factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = true, AllowAutoRedirect = false });
     }
 
-    public Task InitializeAsync() => _fixture.ResetDatabaseAsync();
+    public async Task InitializeAsync()
+    {
+        await _fixture.ResetDatabaseAsync();
+        await AuthenticateAsync();
+    }
+
+    private async Task AuthenticateAsync()
+    {
+        var response = await _client.PostAsync("/api/auth/test-login", null);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
 
     public Task DisposeAsync() => Task.CompletedTask;
 

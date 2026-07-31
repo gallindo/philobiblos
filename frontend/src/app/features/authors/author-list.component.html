@@ -1,9 +1,11 @@
 <div class="catalog" data-testid="authors-section">
   <div class="catalog-header">
     <h2>Authors</h2>
-    <button type="button" class="btn-primary" (click)="startCreate()" data-testid="new-author-button">
-      + New author
-    </button>
+    @if (isEditor()) {
+      <button type="button" class="btn-primary" (click)="startCreate()" data-testid="new-author-button">
+        + New author
+      </button>
+    }
   </div>
 
   @if (message()) {
@@ -96,13 +98,15 @@
               <td data-testid="author-name">{{ author.name }}</td>
               <td data-testid="author-bio" class="bio-cell" [attr.title]="author.bio || null">{{ author.bio || '—' }}</td>
               <td class="actions">
-                @if (confirmingDelete() === author) {
-                  <span class="confirm-text">Delete?</span>
-                  <button type="button" class="btn-link danger" (click)="confirmDelete(author)" data-testid="author-delete-confirm">Delete</button>
-                  <button type="button" class="btn-link" (click)="cancelDelete()" data-testid="author-delete-cancel">Cancel</button>
-                } @else {
-                  <button type="button" class="btn-link" (click)="startEdit(author)" data-testid="author-edit">Edit</button>
-                  <button type="button" class="btn-link danger" (click)="requestDelete(author)" data-testid="author-delete">Delete</button>
+                @if (isEditor()) {
+                  @if (confirmingDelete() === author) {
+                    <span class="confirm-text">Delete?</span>
+                    <button type="button" class="btn-link danger" (click)="confirmDelete(author)" data-testid="author-delete-confirm">Delete</button>
+                    <button type="button" class="btn-link" (click)="cancelDelete()" data-testid="author-delete-cancel">Cancel</button>
+                  } @else {
+                    <button type="button" class="btn-link" (click)="startEdit(author)" data-testid="author-edit">Edit</button>
+                    <button type="button" class="btn-link danger" (click)="requestDelete(author)" data-testid="author-delete">Delete</button>
+                  }
                 }
               </td>
             </tr>

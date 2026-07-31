@@ -1,9 +1,10 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ApiService } from '../../core/api.service';
+import { AuthService } from '../../core/auth.service';
 import { ErrorService } from '../../core/error.service';
 import { ApiError, Author, Book, BookListParams, Genre, PagedResult } from '../../core/models';
 import { PaginationComponent } from '../../shared/components/pagination.component';
@@ -25,10 +26,13 @@ type BookForm = FormGroup<{
 })
 export class BookListComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly authService = inject(AuthService);
   private readonly errorService = inject(ErrorService);
   private readonly fb = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+
+  readonly isEditor = computed(() => this.authService.isEditor());
 
   readonly data = signal<PagedResult<Book> | null>(null);
   readonly loading = signal(false);
