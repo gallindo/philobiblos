@@ -71,6 +71,53 @@ The backend uses **Clean Architecture** with an explicit repository pattern:
 
 The frontend uses **feature folders** plus a thin `core/` layer for HTTP and error handling. Component state uses Angular signals; HTTP streams are mapped into signals at the component boundary.
 
+## Diagram
+
+```mermaid
+flowchart TB
+    subgraph Client
+        Browser["Browser / Angular SPA"]
+    end
+
+    Browser -->|HTTP /api/*| Nginx["nginx (static + proxy)"]
+
+    subgraph Backend
+        direction TB
+        Api["Philobiblos.Api<br/>Minimal API host<br/>Endpoints + DI + middleware pipeline"]
+
+        App["Philobiblos.Application<br/>Commands, Queries, Handlers<br/>DTOs, Validators, Result&lt;T&gt;<br/>ICommandHandler / IQueryHandler"]
+
+        Infra["Philobiblos.Infrastructure<br/>EF Core + PostgreSQL migrations<br/>Repository implementations<br/>ExceptionHandlingMiddleware + ValidationFilter"]
+
+        Domain["Philobiblos.Domain<br/>Entities: Author, Book, Genre<br/>Exceptions: NotFoundException, ConflictException<br/>IRepository&lt;T&gt;, IUnitOfWork, PagedList&lt;T&gt;"]
+    end
+
+    Nginx --> Api
+    Api -->|invokes handlers| App
+    Api -->|registers services| Infra
+    App -->|depends only on| Domain
+    Infra -->|implements interfaces from| Domain
+    Infra -->|uses| App
+    Infra -->|Npgsql EF Core| Postgres[(PostgreSQL 16)]
+
+    style Domain fill:#d5e8d4,stroke:#82b366,stroke-width:2px
+    style App fill:#fff2cc,stroke:#d6b656,stroke-width:2px
+    style Infra fill:#dae8fc,stroke:#6c8ebf,stroke-width:2px
+    style Api fill:#f8cecc,stroke:#b85450,stroke-width:2px
+    style Postgres fill:#e1d5e7,stroke:#9673a6,stroke-width:2px
+```
+
+## Dependency rule
+
+Dependencies point inward:
+
+- `Philobiblos.Domain` has no project dependencies.
+- `Philobiblos.Application` depends only on `Philobiblos.Domain`.
+- `Philobiblos.Infrastructure` depends on `Philobiblos.Domain` and `Philobiblos.Application`.
+- `Philobiblos.Api` depends on `Philobiblos.Application` and `Philobiblos.Infrastructure` (for DI registration only).
+
+
+
 ## Backend organization
 
 ```
