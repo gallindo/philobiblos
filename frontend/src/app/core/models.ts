@@ -89,6 +89,17 @@ export interface User {
   roles: string[];
 }
 
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  displayName?: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
 export interface PagedListParams {
   [key: string]: string | number | boolean | undefined | null;
   page?: number;

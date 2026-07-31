@@ -12,6 +12,8 @@ public sealed class User : IEntity
 
     public string ProviderSubject { get; set; } = string.Empty;
 
+    public string? PasswordHash { get; set; }
+
     public Role Role { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }

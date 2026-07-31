@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { User } from './models';
+import { LoginRequest, RegisterRequest, User } from './models';
+import { catchError, of, tap } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -25,8 +26,32 @@ export class AuthService {
       });
   }
 
-  login(): void {
+  loginWithGoogle(): void {
     window.location.href = '/api/auth/login';
+  }
+
+  loginWithEmailPassword(request: LoginRequest) {
+    return this.http
+      .post<User>('/api/auth/login', request, { withCredentials: true })
+      .pipe(
+        tap((user) => this.currentUser.set(user)),
+        catchError((error) => {
+          this.currentUser.set(null);
+          throw error;
+        })
+      );
+  }
+
+  register(request: RegisterRequest) {
+    return this.http
+      .post<User>('/api/auth/register', request, { withCredentials: true })
+      .pipe(
+        tap((user) => this.currentUser.set(user)),
+        catchError((error) => {
+          this.currentUser.set(null);
+          throw error;
+        })
+      );
   }
 
   logout(): void {

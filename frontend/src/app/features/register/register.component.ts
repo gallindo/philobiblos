@@ -1,41 +1,42 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ErrorService } from '../../core/error.service';
 import { ApiError } from '../../core/models';
 
-type LoginForm = FormGroup<{
+type RegisterForm = FormGroup<{
   email: FormControl<string>;
   password: FormControl<string>;
+  confirmPassword: FormControl<string>;
 }>;
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-register',
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
-  templateUrl: './login.component.html',
-  styleUrl: './login.component.scss'
+  templateUrl: './register.component.html',
+  styleUrl: './register.component.scss'
 })
-export class LoginComponent {
+export class RegisterComponent {
   private readonly authService = inject(AuthService);
   private readonly errorService = inject(ErrorService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
-  readonly form: LoginForm = this.fb.group({
+  readonly form: RegisterForm = this.fb.group({
     email: this.fb.control<string>('', { validators: [Validators.required, Validators.email], nonNullable: true }),
-    password: this.fb.control<string>('', { validators: [Validators.required], nonNullable: true }),
-  });
+    password: this.fb.control<string>('', {
+      validators: [Validators.required, Validators.minLength(8), Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).+$/)],
+      nonNullable: true,
+    }),
+    confirmPassword: this.fb.control<string>('', { validators: [Validators.required], nonNullable: true }),
+  }, { validators: [this.passwordsMatch] });
 
   readonly submitting = signal(false);
   readonly fieldErrors = signal<Record<string, string>>({});
 
-  loginWithGoogle(): void {
-    this.authService.loginWithGoogle();
-  }
-
-  loginWithEmailPassword(): void {
+  register(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -46,7 +47,7 @@ export class LoginComponent {
     this.fieldErrors.set({});
 
     const { email, password } = this.form.getRawValue();
-    this.authService.loginWithEmailPassword({ email, password }).subscribe({
+    this.authService.register({ email, password }).subscribe({
       next: () => {
         this.submitting.set(false);
         this.router.navigate(['/']);
@@ -59,5 +60,13 @@ export class LoginComponent {
         }
       },
     });
+  }
+
+  private passwordsMatch(control: AbstractControl): ValidationErrors | null {
+    const password = control.get('password')?.value;
+    const confirmPassword = control.get('confirmPassword')?.value;
+    return password && confirmPassword && password !== confirmPassword
+      ? { passwordsMismatch: true }
+      : null;
   }
 }

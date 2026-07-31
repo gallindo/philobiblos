@@ -14,6 +14,8 @@ public sealed class AuthOptions
     public CookieAuthOptions Cookie { get; set; } = new();
 
     public TestAuthOptions Test { get; set; } = new();
+
+    public DefaultAdminAuthOptions DefaultAdmin { get; set; } = new();
 }
 
 public sealed class TestAuthOptions
@@ -51,6 +53,17 @@ public sealed class CookieAuthOptions
     public bool SlidingExpiration { get; set; } = true;
 }
 
+public sealed class DefaultAdminAuthOptions
+{
+    public bool Enabled { get; set; } = false;
+
+    public string Email { get; set; } = string.Empty;
+
+    public string Password { get; set; } = string.Empty;
+
+    public string Roles { get; set; } = "Admin,Editor";
+}
+
 public sealed class AuthOptionsValidator : IValidateOptions<AuthOptions>
 {
     public ValidateOptionsResult Validate(string? name, AuthOptions options)
@@ -67,6 +80,19 @@ public sealed class AuthOptionsValidator : IValidateOptions<AuthOptions>
             if (string.IsNullOrWhiteSpace(options.Google.ClientSecret))
             {
                 failures.Add("Auth:Google:ClientSecret is required when Google OAuth is enabled.");
+            }
+        }
+
+        if (options.DefaultAdmin.Enabled)
+        {
+            if (string.IsNullOrWhiteSpace(options.DefaultAdmin.Email))
+            {
+                failures.Add("Auth:DefaultAdmin:Email is required when the default admin seed is enabled.");
+            }
+
+            if (string.IsNullOrWhiteSpace(options.DefaultAdmin.Password))
+            {
+                failures.Add("Auth:DefaultAdmin:Password is required when the default admin seed is enabled.");
             }
         }
 

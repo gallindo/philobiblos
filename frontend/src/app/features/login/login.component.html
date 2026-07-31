@@ -1,5 +1,33 @@
 <div class="login-container">
   <h1>Sign in</h1>
   <p>Administrators and editors must sign in to manage the library.</p>
-  <button type="button" (click)="login()" data-testid="login-button">Sign in with Google</button>
+
+  <button type="button" (click)="loginWithGoogle()" data-testid="google-login-button">Sign in with Google</button>
+
+  <hr />
+
+  <form [formGroup]="form" (ngSubmit)="loginWithEmailPassword()">
+    <div>
+      <label for="email">Email</label>
+      <input id="email" type="email" formControlName="email" data-testid="login-email" />
+      @if (form.get('email')?.invalid && form.get('email')?.touched) {
+        <span class="error">A valid email is required.</span>
+      }
+      @if (fieldErrors()['email']) {
+        <span class="error">{{ fieldErrors()['email'] }}</span>
+      }
+    </div>
+
+    <div>
+      <label for="password">Password</label>
+      <input id="password" type="password" formControlName="password" data-testid="login-password" />
+      @if (form.get('password')?.invalid && form.get('password')?.touched) {
+        <span class="error">Password is required.</span>
+      }
+    </div>
+
+    <button type="submit" [disabled]="submitting()" data-testid="login-submit-button">Sign in</button>
+  </form>
+
+  <p>Don't have an account? <a routerLink="/register">Register</a></p>
 </div>

@@ -23,6 +23,10 @@ services:
       ConnectionStrings__Library: "Host=db;Port=5432;Database=philobiblos;Username=postgres;Password=postgres"
       Auth__Google__Enabled: "false"
       Auth__Test__Enabled: "true"
+      Auth__DefaultAdmin__Enabled: "true"
+      Auth__DefaultAdmin__Email: "admin@example.com"
+      Auth__DefaultAdmin__Password: "Admin123!"
+      Auth__DefaultAdmin__Roles: "Admin,Editor"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
     ports:
       - "8080:8080"

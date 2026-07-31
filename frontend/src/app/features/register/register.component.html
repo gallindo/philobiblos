@@ -1,0 +1,37 @@
+<div class="register-container">
+  <h1>Register</h1>
+  <p>Create a local account to manage the library.</p>
+
+  <form [formGroup]="form" (ngSubmit)="register()">
+    <div>
+      <label for="email">Email</label>
+      <input id="email" type="email" formControlName="email" data-testid="register-email" />
+      @if (form.get('email')?.invalid && form.get('email')?.touched) {
+        <span class="error">A valid email is required.</span>
+      }
+      @if (fieldErrors()['email']) {
+        <span class="error">{{ fieldErrors()['email'] }}</span>
+      }
+    </div>
+
+    <div>
+      <label for="password">Password</label>
+      <input id="password" type="password" formControlName="password" data-testid="register-password" />
+      @if (form.get('password')?.invalid && form.get('password')?.touched) {
+        <span class="error">Password must be at least 8 characters and include uppercase, lowercase, digit, and special characters.</span>
+      }
+    </div>
+
+    <div>
+      <label for="confirmPassword">Confirm password</label>
+      <input id="confirmPassword" type="password" formControlName="confirmPassword" data-testid="register-confirm-password" />
+      @if (form.hasError('passwordsMismatch') && form.get('confirmPassword')?.touched) {
+        <span class="error">Passwords do not match.</span>
+      }
+    </div>
+
+    <button type="submit" [disabled]="submitting()" data-testid="register-submit-button">Register</button>
+  </form>
+
+  <p>Already have an account? <a routerLink="/login">Sign in</a></p>
+</div>

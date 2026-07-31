@@ -23,6 +23,14 @@ public sealed class UserRepository : Repository<User>, IUserRepository
                 cancellationToken);
     }
 
+    public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        return Context.Users
+            .FirstOrDefaultAsync(
+                user => user.Email.ToLower() == email.ToLower(),
+                cancellationToken);
+    }
+
     public Task<bool> AnyAsync(CancellationToken cancellationToken = default)
     {
         return Context.Users.AnyAsync(cancellationToken);

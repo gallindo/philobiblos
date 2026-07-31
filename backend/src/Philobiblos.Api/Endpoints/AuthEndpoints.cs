@@ -111,6 +111,46 @@ public static class AuthEndpoints
                 .Produces<UserDto>(StatusCodes.Status200OK);
         }
 
+        auth.MapPost("/register", async (
+            RegisterUserCommand command,
+            HttpContext context,
+            ICommandHandler<RegisterUserCommand, UserDto> handler,
+            CancellationToken cancellationToken) =>
+        {
+            var user = await handler.Handle(command, cancellationToken);
+            await SignInUserAsync(context, user);
+            return Results.Ok(user);
+        })
+            .AddEndpointFilter<ValidationFilter<RegisterUserCommand>>()
+            .WithName("Register")
+            .Produces<UserDto>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        auth.MapPost("/login", async (
+            LoginUserCommand command,
+            HttpContext context,
+            ICommandHandler<LoginUserCommand, UserDto?> handler,
+            CancellationToken cancellationToken) =>
+        {
+            var user = await handler.Handle(command, cancellationToken);
+            if (user is null)
+            {
+                return Results.Problem(
+                    title: "Invalid credentials",
+                    detail: "Email or password is incorrect.",
+                    statusCode: StatusCodes.Status401Unauthorized);
+            }
+
+            await SignInUserAsync(context, user);
+            return Results.Ok(user);
+        })
+            .AddEndpointFilter<ValidationFilter<LoginUserCommand>>()
+            .WithName("LoginWithEmailPassword")
+            .Produces<UserDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesValidationProblem();
+
         auth.MapPost("/logout", () =>
         {
             return Results.SignOut(

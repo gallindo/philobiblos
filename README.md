@@ -212,6 +212,7 @@ Key decisions are captured in ADRs under `docs/adr/`:
 4. **ProblemDetails + global middleware + FluentValidation filter** — uniform error contract, no stack-trace leakage, correlation IDs. See [ADR 0004](docs/adr/0004-error-contract.md).
 5. **OAuth 2.0 with Google plus cookie sessions** — delegates credential management to Google, avoids storing passwords, and uses policy-based RBAC. See [ADR 0006](docs/adr/0006-oauth-authentication-with-google.md).
 6. **OpenTelemetry observability** — traces, runtime metrics, and health checks are collected through the OpenTelemetry SDK and exported via OTLP to a local collector that feeds Jaeger and Prometheus. See [ADR 0007](docs/adr/0007-opentelemetry-observability.md).
+7. **Local email/password authentication** — local accounts with PBKDF2 password hashes coexist with Google OAuth and share the same cookie session and role-based authorization. See [ADR 0008](docs/adr/0008-local-email-password-authentication.md).
 
 ## Testing strategy
 
@@ -244,9 +245,16 @@ npm run test:e2e
 
 ## Authentication
 
-The backend supports Google OAuth 2.0 when enabled. `Auth:Google:Enabled` is the switch: set it to `true` to enable the Google OAuth flow, or `false` to keep it disabled (no Google credentials required). The default `AuthenticationScheme` is `Google` and only needs to be changed if you register multiple OAuth providers.
+The backend supports two authentication paths:
 
-Configure these settings via `appsettings.json`, `appsettings.Development.json`, or environment variables:
+- **Google OAuth 2.0** — `GET /api/auth/login` initiates the Google flow when `Auth:Google:Enabled` is `true`.
+- **Email / password** — `POST /api/auth/register` and `POST /api/auth/login` for local accounts.
+
+Both paths issue the same HTTP-only cookie session and participate in the existing `Editor`/`Admin` authorization policies.
+
+### Google OAuth
+
+`Auth:Google:Enabled` is the switch. Set it to `true` and provide credentials to enable the Google flow, or keep it `false` to rely on local accounts.
 
 ```json
 {
@@ -257,34 +265,55 @@ Configure these settings via `appsettings.json`, `appsettings.Development.json`,
       "AuthenticationScheme": "Google",
       "ClientId": "<your-google-client-id>",
       "ClientSecret": "<your-google-client-secret>"
-    },
-    "Cookie": {
-      "ExpireTimeSpan": "14.00:00:00",
-      "SlidingExpiration": true
     }
   }
 }
 ```
 
-For environment variables, ASP.NET Core flattens the `:` hierarchy into double underscores (`__`). Examples:
+Environment variable examples:
 
 - `Auth__Google__Enabled=true`
 - `Auth__Google__ClientId=<your-google-client-id>`
 - `Auth__Google__ClientSecret=<your-google-client-secret>`
 - `Auth__SeedAdminEmail=admin@example.com`
 
-To enable real Google OAuth in Docker Compose, add the credentials under the `api` service:
+### Email / password
 
-```yaml
-api:
-  environment:
-    Auth__Google__Enabled: "true"
-    Auth__Google__ClientId: "<your-google-client-id>"
-    Auth__Google__ClientSecret: "<your-google-client-secret>"
-    Auth__SeedAdminEmail: "admin@example.com"
+Local accounts are stored with a salted PBKDF2 password hash. The password policy requires at least 8 characters with uppercase, lowercase, digit, and special characters.
+
+The Angular UI exposes the local sign-in form on `/login` and registration on `/register`.
+
+### Default administrator account
+
+When `Auth:DefaultAdmin:Enabled` is `true`, the application seeds a built-in admin/editor account on startup if no user with the configured email exists. The development defaults are:
+
+- Email: `admin@example.com`
+- Password: `Admin123!`
+- Roles: `Admin`, `Editor`
+
+Override these in production:
+
+```json
+{
+  "Auth": {
+    "DefaultAdmin": {
+      "Enabled": true,
+      "Email": "admin@example.com",
+      "Password": "<a-strong-password>",
+      "Roles": ["Admin", "Editor"]
+    }
+  }
+}
 ```
 
-### Local development and e2e tests without Google credentials
+Environment variable examples:
+
+- `Auth__DefaultAdmin__Enabled=true`
+- `Auth__DefaultAdmin__Email=admin@example.com`
+- `Auth__DefaultAdmin__Password=<a-strong-password>`
+- `Auth__DefaultAdmin__Roles=Admin,Editor`
+
+### Local development and e2e tests without credentials
 
 Enable the test login endpoint for a deterministic, credential-free session:
 

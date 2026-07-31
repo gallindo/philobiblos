@@ -25,6 +25,9 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired()
             .HasMaxLength(256);
 
+        builder.Property(user => user.PasswordHash)
+            .HasMaxLength(256);
+
         builder.Property(user => user.Role)
             .IsRequired();
 
@@ -34,6 +37,8 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasIndex(user => new { user.Provider, user.ProviderSubject })
             .IsUnique();
 
-        builder.HasIndex(user => user.Email);
+        builder.HasIndex(user => user.Email)
+            .IsUnique()
+            .HasDatabaseName("IX_Users_Email_Lower");
     }
 }

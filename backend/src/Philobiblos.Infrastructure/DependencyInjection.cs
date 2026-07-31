@@ -2,13 +2,16 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Philobiblos.Domain.Entities;
 using Philobiblos.Domain.Repositories;
 using Philobiblos.Domain.Security;
 using Philobiblos.Infrastructure.Data;
+using Philobiblos.Infrastructure.HostedServices;
 using Philobiblos.Infrastructure.Repositories;
 using Philobiblos.Infrastructure.Security;
 
@@ -28,6 +31,9 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
 
         services.AddAuthenticationAndAuthorization(configuration);
+
+        services.AddSingleton<PasswordHasher<User>>();
+        services.AddHostedService<DefaultAdminSeeder>();
 
         return services;
     }

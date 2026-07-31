@@ -46,6 +46,7 @@ public sealed class LibraryApiFixture : IAsyncLifetime
                 builder.UseSetting("ConnectionStrings:Library", _postgres.GetConnectionString());
                 builder.UseSetting("Auth:Google:Enabled", "false");
                 builder.UseSetting("Auth:Test:Enabled", "true");
+                builder.UseSetting("Auth:DefaultAdmin:Enabled", "false");
 
                 builder.ConfigureServices(services =>
                 {
