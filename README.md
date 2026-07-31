@@ -1,8 +1,34 @@
-# Philobiblos
+- [1. Philobiblos](#1-philobiblos)
+  - [1.1. Solution overview](#11-solution-overview)
+  - [1.2. Prerequisites](#12-prerequisites)
+  - [1.3. Quick start](#13-quick-start)
+    - [1.3.1. One-command full stack](#131-one-command-full-stack)
+    - [1.3.2. Observability](#132-observability)
+    - [1.3.3. Backend only](#133-backend-only)
+    - [1.3.4. Frontend only](#134-frontend-only)
+  - [1.4. Architecture](#14-architecture)
+  - [1.5. Diagram](#15-diagram)
+  - [1.6. Dependency rule](#16-dependency-rule)
+  - [1.7. Backend organization](#17-backend-organization)
+  - [1.8. Frontend organization](#18-frontend-organization)
+  - [1.9. Database choice](#19-database-choice)
+  - [1.10. Main trade-offs](#110-main-trade-offs)
+  - [1.11. Testing strategy](#111-testing-strategy)
+  - [1.12. Authentication](#112-authentication)
+    - [1.12.1. Google OAuth](#1121-google-oauth)
+    - [1.12.2. Email / password](#1122-email--password)
+    - [1.12.3. Default administrator account](#1123-default-administrator-account)
+    - [1.12.4. Local development and e2e tests without credentials](#1124-local-development-and-e2e-tests-without-credentials)
+  - [1.13. Known limitations](#113-known-limitations)
+  - [1.14. Improvements with more time](#114-improvements-with-more-time)
+
+---
+
+# 1. Philobiblos
 
 A small but production-aware library management system for a Senior Software Engineer technical challenge. It manages **genres**, **authors**, and **books** with case-insensitive uniqueness, delete protection, ISBN validation, and a uniform HTTP error contract.
 
-## Solution overview
+## 1.1. Solution overview
 
 - **Backend:** .NET 10 minimal-API application (`backend/src/Philobiblos.Api/`)
 - **Frontend:** Angular 19 standalone SPA (`frontend/`)
@@ -12,16 +38,16 @@ A small but production-aware library management system for a Senior Software Eng
 
 The repository is intentionally small (three entities, CRUD use cases) so the focus is on justified architecture, a coherent API contract, and a clean local run experience.
 
-## Prerequisites
+## 1.2. Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - [Node.js 22](https://nodejs.org/)
 - [Docker](https://www.docker.com/) & Docker Compose
 - Angular CLI (optional): `npm install -g @angular/cli`
 
-## Quick start
+## 1.3. Quick start
 
-### One-command full stack
+### 1.3.1. One-command full stack
 
 ```bash
 docker compose up --build
@@ -44,7 +70,7 @@ Tear down and remove the volume:
 docker compose down -v
 ```
 
-### Observability
+### 1.3.2. Observability
 
 The API exposes two anonymous, production-friendly endpoints:
 
@@ -59,7 +85,7 @@ When running via Docker Compose, the API sends traces and metrics via OTLP to th
 
 For `dotnet run` without Docker, the app still serves `/health` and `/metrics`, but no collector, Prometheus, or Jaeger services are started.
 
-### Backend only
+### 1.3.3. Backend only
 
 ```bash
 cd backend
@@ -68,7 +94,7 @@ dotnet run --project src/Philobiblos.Api/Philobiblos.Api.csproj
 
 Requires a PostgreSQL instance on `localhost:5432` matching `appsettings.json` (`Database=philobiblos;Username=postgres;Password=postgres`). Migrations auto-apply in Development.
 
-### Frontend only
+### 1.3.4. Frontend only
 
 ```bash
 cd frontend
@@ -78,7 +104,7 @@ npm run start
 
 `ng serve` runs on `http://localhost:4200` and proxies `/api` requests to `http://localhost:8080` via `proxy.conf.json`.
 
-## Architecture
+## 1.4. Architecture
 
 The backend uses **Clean Architecture** with an explicit repository pattern:
 
@@ -89,7 +115,7 @@ The backend uses **Clean Architecture** with an explicit repository pattern:
 
 The frontend uses **feature folders** plus a thin `core/` layer for HTTP and error handling. Component state uses Angular signals; HTTP streams are mapped into signals at the component boundary.
 
-## Diagram
+## 1.5. Diagram
 
 ```mermaid
 flowchart TB
@@ -125,7 +151,7 @@ flowchart TB
     style Postgres fill:#e1d5e7,stroke:#9673a6,stroke-width:2px
 ```
 
-## Dependency rule
+## 1.6. Dependency rule
 
 Dependencies point inward:
 
@@ -136,7 +162,7 @@ Dependencies point inward:
 
 
 
-## Backend organization
+## 1.7. Backend organization
 
 ```
 backend/src/
@@ -168,7 +194,7 @@ backend/src/
 - **Repository pattern.** EF Core and raw SQL are isolated in the infrastructure layer; the application layer depends on interfaces defined in the domain.
 - **Preserved HTTP contract.** Routes, status codes, and ProblemDetails shapes remain unchanged from the previous vertical-slice implementation.
 
-## Frontend organization
+## 1.8. Frontend organization
 
 ```
 frontend/src/app/
@@ -194,7 +220,7 @@ frontend/src/app/
 - A single HTTP interceptor normalizes every backend error into one `ApiError` shape.
 - No NgRx store; component-level signals are sufficient for this scope.
 
-## Database choice
+## 1.9. Database choice
 
 PostgreSQL 16 is used via the Npgsql EF Core provider.
 
@@ -202,7 +228,7 @@ PostgreSQL 16 is used via the Npgsql EF Core provider.
 - Optional ISBN uniqueness via a filtered unique index on `Books.Isbn` where `Isbn IS NOT NULL`.
 - Foreign keys from `Books` to `Authors` and `Genres` use `Restrict` delete behavior; the application pre-checks references and returns `409 Conflict` when deletion would leave orphans.
 
-## Main trade-offs
+## 1.10. Main trade-offs
 
 Key decisions are captured in ADRs under `docs/adr/`:
 
@@ -214,7 +240,7 @@ Key decisions are captured in ADRs under `docs/adr/`:
 6. **OpenTelemetry observability** — traces, runtime metrics, and health checks are collected through the OpenTelemetry SDK and exported via OTLP to a local collector that feeds Jaeger and Prometheus. See [ADR 0007](docs/adr/0007-opentelemetry-observability.md).
 7. **Local email/password authentication** — local accounts with PBKDF2 password hashes coexist with Google OAuth and share the same cookie session and role-based authorization. See [ADR 0008](docs/adr/0008-local-email-password-authentication.md).
 
-## Testing strategy
+## 1.11. Testing strategy
 
 - **Unit tests** (`backend/tests/Philobiblos.UnitTests/`): validator rules, ISBN checksum logic, pagination bounds, and business-rule branches that do not depend on real persistence.
 - **Integration tests** (`backend/tests/Philobiblos.IntegrationTests/`): `WebApplicationFactory` + Testcontainers PostgreSQL. Each scenario hits the real HTTP boundary with real migrations and persistence, including 400/404/409 shapes, pagination metadata, and sort whitelist rejection.
@@ -243,7 +269,7 @@ cd frontend
 npm run test:e2e
 ```
 
-## Authentication
+## 1.12. Authentication
 
 The backend supports two authentication paths:
 
@@ -252,7 +278,7 @@ The backend supports two authentication paths:
 
 Both paths issue the same HTTP-only cookie session and participate in the existing `Editor`/`Admin` authorization policies.
 
-### Google OAuth
+### 1.12.1. Google OAuth
 
 `Auth:Google:Enabled` is the switch. Set it to `true` and provide credentials to enable the Google flow, or keep it `false` to rely on local accounts.
 
@@ -277,13 +303,13 @@ Environment variable examples:
 - `Auth__Google__ClientSecret=<your-google-client-secret>`
 - `Auth__SeedAdminEmail=admin@example.com`
 
-### Email / password
+### 1.12.2. Email / password
 
 Local accounts are stored with a salted PBKDF2 password hash. The password policy requires at least 8 characters with uppercase, lowercase, digit, and special characters.
 
 The Angular UI exposes the local sign-in form on `/login` and registration on `/register`.
 
-### Default administrator account
+### 1.12.3. Default administrator account
 
 When `Auth:DefaultAdmin:Enabled` is `true`, the application seeds a built-in admin/editor account on startup if no user with the configured email exists. The development defaults are:
 
@@ -313,7 +339,7 @@ Environment variable examples:
 - `Auth__DefaultAdmin__Password=<a-strong-password>`
 - `Auth__DefaultAdmin__Roles=Admin,Editor`
 
-### Local development and e2e tests without credentials
+### 1.12.4. Local development and e2e tests without credentials
 
 Enable the test login endpoint for a deterministic, credential-free session:
 
@@ -334,14 +360,14 @@ Environment variable: `Auth__Test__Enabled=true`.
 
 `POST /api/auth/test-login` is only available in non-Production environments and issues an authenticated cookie for the configured test user. The default `docker-compose.yml` ships with this enabled for e2e tests.
 
-## Known limitations
+## 1.13. Known limitations
 
 - No audit logging or audit columns.
 - No soft deletes; records are physically removed.
 - Role claims are captured at sign-in; a role change requires signing out and back in to refresh.
 - No CI pipeline or deployment target beyond Docker Compose.
 
-## Improvements with more time
+## 1.14. Improvements with more time
 
 - Additional OAuth providers (Microsoft, GitHub) behind a small external-identity abstraction.
 - Refresh role claims without forcing a full sign-out.
